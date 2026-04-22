@@ -1,0 +1,1 @@
+for ( let current_index = 0 ; let processed_value = +require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . split ( / \s / ) [ current_index ++ ] ; ) console . log ( ( processed_value * processed_value + processed_value + 2 ) / 2 )

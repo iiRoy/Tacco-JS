@@ -1,0 +1,1 @@
+for(s=1,i=require("fs").readFileSync("/dev/stdin","utf8");i--;)s*=i;console.log(i)

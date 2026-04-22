@@ -1,0 +1,18 @@
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  var ary = lines[0].split(" ");
+  var ary[0] = ary[1];
+  var ary[1] = ary[0];
+  var str = ary.join("");
+  console.log(str);
+});

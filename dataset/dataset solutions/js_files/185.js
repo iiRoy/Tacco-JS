@@ -1,0 +1,1 @@
+x=require('fs').readFileSync('/dev/stdin','utf8').split("\n");x.sort(function(a,b){return b-a;});console.log((parseFloat(x[0])-parseFloat(x[x.length-1])).toFixed(2));

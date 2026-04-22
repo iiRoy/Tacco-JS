@@ -1,0 +1,1 @@
+console.log((S=>S.replace(/7/,'8'))(require('fs').readFileSync('/dev/stdin', 'utf8')));

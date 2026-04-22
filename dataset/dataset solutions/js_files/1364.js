@@ -1,0 +1,1 @@
+process.stdin.on('data', line => console.log(line.toString().split(' ').sort((a, b) => a - b).join(' ')));

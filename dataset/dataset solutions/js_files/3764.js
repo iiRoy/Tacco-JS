@@ -1,0 +1,7 @@
+function ABD(input) {
+    if(parseInt(input, 10) < 1000)
+        console.log('ABC');
+    else
+        console.log('ABD');
+}
+ABD(require("fs").readFileSync("/dev/stdin", "utf8"));

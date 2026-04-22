@@ -1,0 +1,1 @@
+b=[],m=n=p=0;require("fs").readFileSync("/dev/stdin","utf8").trim().split('\n').sort().map(function(i){i==p?m++:((m>n?(b=[p],n=m):m==n?b.push(p):0),p=i,m=0)});console.log(b.join('\n'))

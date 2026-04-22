@@ -1,0 +1,102 @@
+const
+  [
+    firstLineContent
+    ,
+    ...subsequentLines
+  ]
+  =
+  require('fs')
+    .readFileSync(
+      '/dev/stdin'
+      ,
+      'utf8'
+    )
+    .split(
+      /\n/
+    )
+  ;
+
+const
+  totalElements
+  =
+  Number(firstLineContent)
+  ;
+
+let
+  cumulativeValue
+  =
+  (
+    totalElements
+    *
+    (totalElements + 1)
+    *
+    (totalElements + 2)
+  )
+  /
+  6
+  ;
+
+for
+(
+  const
+    currentPairString
+  of
+  subsequentLines
+)
+{
+  let
+    [
+      firstVertex
+      ,
+      secondVertex
+    ]
+    =
+    currentPairString
+      .split(
+        /\s/
+      )
+      .map(
+        Number
+      )
+    ;
+
+  if
+  (
+    firstVertex
+    >
+    secondVertex
+  )
+  {
+    [
+      firstVertex
+      ,
+      secondVertex
+    ]
+    =
+    [
+      secondVertex
+      ,
+      firstVertex
+    ]
+    ;
+  }
+
+  cumulativeValue
+    -=
+    firstVertex
+    *
+    (
+      totalElements
+      -
+      secondVertex
+      +
+      1
+    )
+  ;
+}
+
+console
+  .log(
+    cumulativeValue
+  )
+  ;

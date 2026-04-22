@@ -1,0 +1,56 @@
+/**
+ * Created by hiroqn on 13/10/03.
+ */
+//var fs = require('fs'),
+//    length = fs.fstatSync(process.stdin.fd).size,
+//    buffer = new Buffer(length),
+//    bytesRead = fs.readSync(process.stdin.fd, buffer, 0, length, 0),
+//    input = buffer.toString('utf8', 0, bytesRead).split('\n');
+var stdin = '', input;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function (chunk) {
+  stdin += chunk;
+});
+process.stdin.on('end', function () {
+  input = stdin.split('\n');
+  main();
+});
+function main() {
+  var firstLine = input[0].split(' '),
+      n = +firstLine[0],
+      m = +firstLine[1],
+      s = +firstLine[2] - 1,
+      g1 = +firstLine[3] - 1,
+      g2 = +firstLine[4] - 1,
+      d = new Array(n),
+      temp,
+      i, j, k;
+  for (i = 0; i < n; i++) {
+    d[i] = new Array(n);
+    for (j = 0; j < n; j++) {
+      d[i][j] = i === j ? 0 : Infinity;
+    }
+  }
+
+  i = 1;
+  while (i <= m) {
+    temp = input[i].split(' ');
+    d[temp[0] - 1][temp[1] - 1] = +temp[2];
+    i++;
+  }
+
+  for (k = 0; k < n; k++) {
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < n; j++) {
+        d[i][j] = Math.min(d[i][j], d[i][k] + d[k][j]);
+      }
+    }
+  }
+
+  var res = Infinity;
+  for (i = 0; i < n; i++) {
+    res = Math.min(res, d[s][i] + d[i][g1] + d[i][g2]);
+  }
+  console.log(res);
+}

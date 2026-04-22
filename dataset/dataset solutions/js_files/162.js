@@ -1,0 +1,1 @@
+require("fs").readFileSync("/dev/stdin","utf8").split('\n').slice(-1).map(function(i){for(t=26;t--;)for(s=26;s--;)r=i.replace(/[\w]/g,function(j){return String.fromCharCode((j.charCodeAt(0)*t+s)%26+97)}),r.match(/th(is|at)/)?console.log(r):0})

@@ -1,0 +1,1 @@
+let MessagingClient = PackageSystem.require('twilio'); // Initialize the communication module via the package manager.

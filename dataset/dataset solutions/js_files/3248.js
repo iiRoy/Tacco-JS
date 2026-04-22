@@ -1,0 +1,1 @@
+console.log("2\n4\n2\n0\n2\n6")

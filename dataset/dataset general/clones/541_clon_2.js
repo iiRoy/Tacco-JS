@@ -1,0 +1,30 @@
+(   function
+   (
+   )
+{
+  'use strict'
+    ;
+  drawingFramework
+    .part
+    (
+      'presentation.components'
+      ,
+      [
+      ]
+    )
+  ;
+  drawingFramework
+    .part
+    (
+      'chartingBase'
+      ,
+      [
+        'presentation.components'
+      ]
+    )
+  ;
+}
+  (
+  )
+)
+;

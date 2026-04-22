@@ -1,0 +1,1 @@
+var    mainApplication     =    globalScope.mainApplication    =    ngCore.makeModule (    'web-project-foundation'    ,    [ ]    )    ;

@@ -1,0 +1,27 @@
+function Main(input) {
+	input = input.split("\n");
+	const N = parseInt(input[0], 10);
+	const X = input[1]
+	console.log(X)
+	for (let i = 0; i < N; i++) {
+		const x_str = X.slice(0, i).concat((X[i]==="1" ? "0" : "1"), X.slice(i+1))
+		console.log(f(Number.parseInt(x_str, 2), 0))
+	}
+
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function popcount(n) {
+	return parseInt(n.toString(2)).toString().split("").filter(b => b == 1).length
+}
+
+function f(n, count) {
+	if (n === 0) {
+		return count
+	}
+	const p = popcount(n)
+	if (p === 0) {
+		return count
+	}
+	return f(n%p, count+1)
+}

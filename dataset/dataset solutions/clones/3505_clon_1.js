@@ -1,0 +1,1528 @@
+parcelRequire = function ( e, r, t, n ) {
+  // This is the main parcelRequire function, acting as a module loader.
+  // It is responsible for loading, caching, and executing modules.
+  //
+  // Parameters:
+  //   e: An object containing all module definitions.
+  //   r: The module cache.
+  //   t: An array of entry point module IDs to be loaded initially.
+  //   n: The global variable name under which the main export will be assigned (if applicable).
+
+  var i, // Variable to store the first error encountered during module loading.
+    o = "function" == typeof parcelRequire && parcelRequire, // Reference to existing global parcelRequire, if any.
+    u = "function" == typeof require && require; // Reference to Node.js 'require', if available.
+
+  /**
+   * The core module loading and execution function.
+   * @param {string} t - The module ID to load.
+   * @param {boolean} n - Flag indicating if this is a global parcelRequire call.
+   * @returns {*} The exports of the loaded module.
+   */
+  function f ( t, n ) {
+
+    // Check if the module is already in the cache.
+    if ( !r[t] ) {
+
+      // If the module is not in the cache, check if its definition exists.
+      if ( !e[t] ) {
+        var i = "function" == typeof parcelRequire && parcelRequire; // Re-check for parcelRequire within this scope.
+
+        // If not a global module and a global parcelRequire exists, try to load it via that.
+        if ( !n && i ) {
+          return i(t, !0);
+        }
+
+        // If the original global parcelRequire exists, try to load it via that.
+        if ( o ) {
+          return o(t, !0);
+        }
+
+        // If Node.js 'require' is available and 't' is a string, try to load it via Node.js.
+        if ( u && "string" == typeof t ) {
+          return u(t);
+        }
+
+        // If the module cannot be found by any means, throw an error.
+        var c = new Error("Cannot find module '" + t + "'");
+        throw c.code = "MODULE_NOT_FOUND", c;
+      }
+
+      // Initialize the module's local 'require' function resolver and cache.
+      p.resolve = function ( r ) {
+        return e[t][1][r] || r
+      };
+      p.cache = {};
+
+      // Create a new module instance and store it in the cache.
+      var l = r[t] = new f.Module(t);
+
+      // Execute the module's code, passing in its local require, module object, exports, and 'this' context.
+      e[t][0].call(l.exports, p, l, l.exports, this);
+    }
+
+    // Return the exports of the (now cached) module.
+    return r[t].exports;
+
+    /**
+     * Local 'require' function for modules.
+     * @param {string} e - The module ID to require.
+     * @returns {*} The exports of the required module.
+     */
+    function p ( e ) {
+      return f(p.resolve(e))
+    }
+  }
+
+  // Assign static properties to the module loader function `f`.
+
+  // Flag indicating this is a parcelRequire instance.
+  f.isParcelRequire = !0;
+
+  // Constructor for a module object.
+  f.Module = function ( e ) {
+    this.id = e; // Module identifier.
+    this.bundle = f; // Reference to the bundler function.
+    this.exports = {}; // Module exports object.
+  };
+
+  // Store references to the modules and cache.
+  f.modules = e;
+  f.cache = r;
+  f.parent = o; // Keep track of the parent parcelRequire instance.
+
+  // Method to register new modules dynamically.
+  f.register = function ( r, t ) {
+    e[r] = [ function ( e, r ) {
+      r.exports = t
+    }, {} ]
+  };
+
+  // Iterate through entry points and load them.
+  for ( var c = 0; c < t.length; c++ ) {
+    try {
+      f(t[c]);
+    } catch ( e ) {
+      // Capture the first error if any occurred during entry point loading.
+      i || (i = e);
+    }
+  }
+
+  // If there are entry points, handle the main export.
+  if ( t.length ) {
+    var l = f(t[t.length - 1]); // Get the exports of the last entry point.
+
+    // Export based on environment: CommonJS, AMD, or global variable.
+    "object" == typeof exports && "undefined" != typeof module ? module.exports = l :
+      "function" == typeof define && define.amd ? define(function () {
+        return l
+      }) :
+      n && (this[n] = l); // Assign to a global variable if 'n' is provided.
+  }
+
+  // Update the global parcelRequire reference to the internal loader function.
+  if ( parcelRequire = f, i ) {
+    // If an error was captured during loading, re-throw it.
+    throw i;
+  }
+
+  // Return the main module loader function.
+  return f;
+}({
+  // --- Module Definitions Start Here ---
+  "Focm": [ function ( require, module, exports ) {
+    var n = {}; // Global object to hold all sub-modules.
+
+    // Module: Control.Semigroupoid
+    !function ( n ) {
+      "use strict";
+      var t = function ( n ) {
+        this.compose = n
+      }, r = new t(function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            return n(t(r))
+          }
+        }
+      });
+      n.compose = function ( n ) {
+        return n.compose
+      }, n.Semigroupoid = t, n.semigroupoidFn = r
+    }(n["Control.Semigroupoid"] = n["Control.Semigroupoid"] || {});
+
+    // Module: Control.Category
+    !function ( t ) {
+      "use strict";
+      var r = n["Control.Semigroupoid"], e = function ( n, t ) {
+        this.Semigroupoid0 = n, this.identity = t
+      }, o = new e(function () {
+        return r.semigroupoidFn
+      }, function ( n ) {
+        return n
+      });
+      t.Category = e, t.identity = function ( n ) {
+        return n.identity
+      }, t.categoryFn = o
+    }(n["Control.Category"] = n["Control.Category"] || {});
+
+    // Module: Data.Function
+    !function ( t ) {
+      "use strict";
+      n["Control.Category"], n["Data.Boolean"], n["Data.Ord"], n["Data.Ring"];
+      t.flip = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            return n(r)(t)
+          }
+        }
+      }, t.const = function ( n ) {
+        return function ( t ) {
+          return n
+        }
+      }
+    }(n["Data.Function"] = n["Data.Function"] || {});
+
+    // Module: Data.Functor (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Data.Functor"] = n["Data.Functor"] || {}).arrayMap = function ( n ) {
+        return function ( t ) {
+          for ( var r = t.length, e = new Array(r), o = 0; o < r; o++ ) e[o] = n(t[o]);
+          return e
+        }
+      }
+    }();
+
+    // Module: Data.Unit (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Data.Unit"] = n["Data.Unit"] || {}).unit = {}
+    }();
+
+    // Module: Data.Show (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Data.Show"] = n["Data.Show"] || {}).showIntImpl = function ( n ) {
+        return n.toString()
+      }
+    }();
+
+    // Module: Data.Show (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Data.Show"],
+        e = (n["Data.Symbol"], n["Record.Unsafe"], n["Type.Data.RowList"], function ( n ) {
+          this.show = n
+        }),
+        o = new e(r.showIntImpl);
+      t.Show = e, t.show = function ( n ) {
+        return n.show
+      }, t.showInt = o
+    }(n["Data.Show"] = n["Data.Show"] || {});
+
+    // Module: Data.Unit (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Data.Unit"];
+      n["Data.Show"];
+      t.unit = r.unit
+    }(n["Data.Unit"] = n["Data.Unit"] || {});
+
+    // Module: Data.Functor (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Data.Functor"],
+        e = (n["Control.Semigroupoid"], n["Data.Function"]),
+        o = n["Data.Unit"],
+        a = function ( n ) {
+          this.map = n
+        },
+        i = function ( n ) {
+          return n.map
+        },
+        u = new a(r.arrayMap);
+      t.Functor = a, t.map = i, t.void = function ( n ) {
+        return i(n)(e.const(o.unit))
+      }, t.functorArray = u
+    }(n["Data.Functor"] = n["Data.Functor"] || {});
+
+    // Module: Control.Apply
+    !function ( t ) {
+      "use strict";
+      n["Control.Apply"];
+      var r = n["Control.Category"],
+        e = n["Data.Function"],
+        o = n["Data.Functor"],
+        a = function ( n ) {
+          return n.apply
+        };
+      t.Apply = function ( n, t ) {
+        this.Functor0 = n, this.apply = t
+      }, t.apply = a, t.applySecond = function ( n ) {
+        return function ( t ) {
+          return function ( i ) {
+            return a(n)(o.map(n.Functor0())(e.const(r.identity(r.categoryFn)))(t))(i)
+          }
+        }
+      }
+    }(n["Control.Apply"] = n["Control.Apply"] || {});
+
+    // Module: Control.Applicative
+    !function ( t ) {
+      "use strict";
+      var r = n["Control.Apply"],
+        e = (n["Data.Functor"], n["Data.Unit"], function ( n ) {
+          return n.pure
+        });
+      t.Applicative = function ( n, t ) {
+        this.Apply0 = n, this.pure = t
+      }, t.pure = e, t.liftA1 = function ( n ) {
+        return function ( t ) {
+          return function ( o ) {
+            return r.apply(n.Apply0())(e(n)(t))(o)
+          }
+        }
+      }
+    }(n["Control.Applicative"] = n["Control.Applicative"] || {});
+
+    // Module: Control.Bind
+    !function ( t ) {
+      "use strict";
+      n["Control.Bind"], n["Control.Applicative"], n["Control.Apply"], n["Control.Category"];
+      var r = n["Data.Function"],
+        e = (n["Data.Functor"], n["Data.Unit"], function ( n ) {
+          return n.bind
+        }),
+        o = function ( n ) {
+          return r.flip(e(n))
+        };
+      t.Bind = function ( n, t ) {
+        this.Apply0 = n, this.bind = t
+      }, t.bind = e, t.bindFlipped = o, t.composeKleisliFlipped = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            return function ( e ) {
+              return o(n)(t)(r(e))
+            }
+          }
+        }
+      }
+    }(n["Control.Bind"] = n["Control.Bind"] || {});
+
+    // Module: Data.Array
+    !function ( n ) {
+      "use strict";
+      n.range = function ( n ) {
+        return function ( t ) {
+          for ( var r = n > t ? -1 : 1, e = new Array(r * (t - n) + 1), o = n, a = 0; o !== t; ) e[a++] = o, o += r;
+          return e[a] = o, e
+        }
+      }, n.filter = function ( n ) {
+        return function ( t ) {
+          return t.filter(n)
+        }
+      }
+    }(n["Data.Array"] = n["Data.Array"] || {});
+
+    // Module: Data.Foldable (partial definition)
+    !function ( n ) {
+      "use strict";
+      n.foldrArray = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            for ( var e = t, o = r.length - 1; o >= 0; o-- ) e = n(r[o])(e);
+            return e
+          }
+        }
+      }, n.foldlArray = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            for ( var e = t, o = r.length, a = 0; a < o; a++ ) e = n(e)(r[a]);
+            return e
+          }
+        }
+      }
+    }(n["Data.Foldable"] = n["Data.Foldable"] || {});
+
+    // Module: Control.Monad
+    !function ( t ) {
+      "use strict";
+      n["Control.Bind"], n["Control.Applicative"], n["Control.Apply"], n["Control.Category"];
+      var r = n["Data.Function"],
+        e = (n["Data.Functor"], n["Data.Unit"], function ( n ) {
+          return n.bind
+        }),
+        o = function ( n ) {
+          return r.flip(e(n))
+        };
+      t.Monad = function ( n, t ) {
+        this.Applicative0 = n, this.Bind1 = t
+      }, t.ap = function ( n ) {
+        return function ( t ) {
+          return function ( o ) {
+            return e.bind(n.Bind1())(t)(function ( t ) {
+              return e.bind(n.Bind1())(o)(function ( e ) {
+                return r.pure(n.Applicative0())(t(e))
+              })
+            })
+          }
+        }
+      }
+    }(n["Control.Monad"] = n["Control.Monad"] || {});
+
+    // Module: Data.Semigroup
+    !function ( t ) {
+      "use strict";
+      n["Data.Semigroup"], n["Data.Symbol"], n["Data.Unit"], n["Data.Void"], n["Record.Unsafe"], n["Type.Data.RowList"];
+      t.Semigroup = function ( n ) {
+        this.append = n
+      }, t.append = function ( n ) {
+        return n.append
+      }
+    }(n["Data.Semigroup"] = n["Data.Semigroup"] || {});
+
+    // Module: Data.Monoid
+    !function ( t ) {
+      "use strict";
+      n["Data.Boolean"], n["Data.Eq"], n["Data.EuclideanRing"], n["Data.Ord"], n["Data.Ordering"], n["Data.Semigroup"], n["Data.Symbol"], n["Data.Unit"], n["Record.Unsafe"], n["Type.Data.RowList"];
+      t.Monoid = function ( n, t ) {
+        this.Semigroup0 = n, this.mempty = t
+      }, t.mempty = function ( n ) {
+        return n.mempty
+      }
+    }(n["Data.Monoid"] = n["Data.Monoid"] || {});
+
+    // Module: Data.Maybe
+    !function ( t ) {
+      "use strict";
+      n["Control.Alt"], n["Control.Alternative"], n["Control.Applicative"], n["Control.Apply"], n["Control.Bind"], n["Control.Category"], n["Control.Extend"], n["Control.Monad"], n["Control.MonadZero"], n["Control.Plus"], n["Data.Bounded"], n["Data.Eq"], n["Data.Function"], n["Data.Functor"], n["Data.Functor.Invariant"], n["Data.Monoid"], n["Data.Ord"], n["Data.Ordering"], n["Data.Semigroup"], n["Data.Show"], n["Data.Unit"], n.Prelude;
+      var r = function () {
+          function n () {}
+          return n.value = new n, n
+        }(),
+        e = function () {
+          function n ( n ) {
+            this.value0 = n
+          }
+          return n.create = function ( t ) {
+            return new n(t)
+          }, n
+        }();
+      t.Nothing = r, t.Just = e, t.maybe = function ( n ) {
+        return function ( t ) {
+          return function ( o ) {
+            if ( o instanceof r ) return n;
+            if ( o instanceof e ) return t(o.value0);
+            throw new Error("Failed pattern match at Data.Maybe (line 217, column 1 - line 217, column 51): " + [ n.constructor.name, t.constructor.name, o.constructor.name ])
+          }
+        }
+      }
+    }(n["Data.Maybe"] = n["Data.Maybe"] || {});
+
+    // Module: Data.Semiring (partial definition)
+    !function ( n ) {
+      "use strict";
+      n.intAdd = function ( n ) {
+        return function ( t ) {
+          return n + t | 0
+        }
+      }, n.intMul = function ( n ) {
+        return function ( t ) {
+          return n * t | 0
+        }
+      }
+    }(n["Data.Semiring"] = n["Data.Semiring"] || {});
+
+    // Module: Data.Semiring (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Data.Semiring"],
+        e = (n["Data.Symbol"], n["Data.Unit"], n["Record.Unsafe"], n["Type.Data.Row"], n["Type.Data.RowList"], function ( n, t, r, e ) {
+          this.add = n, this.mul = t, this.one = r, this.zero = e
+        }),
+        o = new e(r.intAdd, r.intMul, 1, 0);
+      t.Semiring = e, t.add = function ( n ) {
+        return n.add
+      }, t.zero = function ( n ) {
+        return n.zero
+      }, t.mul = function ( n ) {
+        return n.mul
+      }, t.one = function ( n ) {
+        return n.one
+      }, t.semiringInt = o
+    }(n["Data.Semiring"] = n["Data.Semiring"] || {});
+
+    // Module: Data.Foldable (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Data.Foldable"],
+        e = (n["Control.Alt"], n["Control.Applicative"]),
+        o = n["Control.Apply"],
+        a = (n["Control.Bind"], n["Control.Category"], n["Control.Plus"], n["Control.Semigroupoid"], n["Data.Eq"], n["Data.Function"], n["Data.Functor"], n["Data.HeytingAlgebra"], n["Data.Maybe"], n["Data.Maybe.First"], n["Data.Maybe.Last"], n["Data.Monoid"]),
+        i = (n["Data.Monoid.Additive"], n["Data.Monoid.Conj"], n["Data.Monoid.Disj"], n["Data.Monoid.Dual"], n["Data.Monoid.Endo"], n["Data.Monoid.Multiplicative"], n["Data.Newtype"], n["Data.Ord"], n["Data.Ordering"], n["Data.Semigroup"]),
+        u = (n["Data.Semiring"], n["Data.Unit"]),
+        f = (n.Prelude, function ( n, t, r ) {
+          this.foldMap = n, this.foldl = t, this.foldr = r
+        }),
+        c = function ( n ) {
+          return n.foldr
+        },
+        l = function ( n ) {
+          return function ( t ) {
+            return function ( r ) {
+              return c(n)(function ( n ) {
+                return function ( e ) {
+                  return i.append(t.Semigroup0())(r(n))(e)
+                }
+              })(a.mempty(t))
+            }
+          }
+        },
+        s = new f(function ( n ) {
+          return l(s)(n)
+        }, r.foldlArray, r.foldrArray);
+      t.Foldable = f, t.foldr = c, t.foldl = function ( n ) {
+        return n.foldl
+      }, t.foldMap = function ( n ) {
+        return n.foldMap
+      }, t.foldMapDefaultR = l, t.traverse_ = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            return c(t)(function ( t ) {
+              return o.applySecond(n.Apply0())(r(t))
+            })(e.pure(n)(u.unit))
+          }
+        }
+      }, t.foldableArray = s
+    }(n["Data.Foldable"] = n["Data.Foldable"] || {});
+
+    // Module: Partial.Unsafe
+    !function ( t ) {
+      "use strict";
+      (n["Partial.Unsafe"] = n["Partial.Unsafe"] || {}).unsafePartial = function ( n ) {
+        return n()
+      }
+    }();
+
+    // Module: Partial (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Partial"] = n["Partial"] || {}).crashWith = function () {
+        return function ( n ) {
+          throw new Error(n)
+        }
+      }
+    }();
+
+    // Module: Partial (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n.Partial;
+      t.crashWith = r.crashWith
+    }(n.Partial = n.Partial || {});
+
+    // Module: Partial.Unsafe (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Partial.Unsafe"],
+        e = n.Partial;
+      t.unsafeCrashWith = function ( n ) {
+        return r.unsafePartial(function ( t ) {
+          return e.crashWith(t)(n)
+        })
+      }
+    }(n["Partial.Unsafe"] = n["Partial.Unsafe"] || {});
+
+    // Module: Unsafe.Coerce (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Unsafe.Coerce"] = n["Unsafe.Coerce"] || {}).unsafeCoerce = function ( n ) {
+        return n
+      }
+    }();
+
+    // Module: Unsafe.Coerce (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Unsafe.Coerce"];
+      t.unsafeCoerce = r.unsafeCoerce
+    }(n["Unsafe.Coerce"] = n["Unsafe.Coerce"] || {});
+
+    // Module: Data.Array (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Data.Array"];
+      n["Control.Alt"], n["Control.Alternative"], n["Control.Applicative"], n["Control.Apply"], n["Control.Bind"], n["Control.Category"], n["Control.Lazy"], n["Control.Monad.Rec.Class"], n["Control.Monad.ST"], n["Control.Monad.ST.Internal"], n["Control.Semigroupoid"], n["Data.Array.NonEmpty.Internal"], n["Data.Array.ST"], n["Data.Array.ST.Iterator"], n["Data.Boolean"], n["Data.Eq"], n["Data.Foldable"], n["Data.Function"], n["Data.Functor"], n["Data.HeytingAlgebra"], n["Data.Maybe"], n["Data.Ord"], n["Data.Ordering"], n["Data.Ring"], n["Data.Semigroup"], n["Data.Semiring"], n["Data.Traversable"], n["Data.Tuple"], n["Data.Unfoldable"], n["Partial.Unsafe"], n.Prelude, n["Unsafe.Coerce"];
+      t.range = r.range, t.filter = r.filter
+    }(n["Data.Array"] = n["Data.Array"] || {});
+
+    // Module: Data.Either
+    !function ( t ) {
+      "use strict";
+      n["Control.Alt"];
+      var r = n["Control.Applicative"],
+        e = n["Control.Apply"],
+        o = n["Control.Bind"],
+        a = (n["Control.Extend"], n["Control.Monad"], n["Control.Semigroupoid"], n["Data.Bifoldable"], n["Data.Bifunctor"], n["Data.Bitraversable"], n["Data.Bounded"], n["Data.Eq"], n["Data.Foldable"], n["Data.FoldableWithIndex"], n["Data.Function"], n["Data.Functor"]),
+        i = (n["Data.Functor.Invariant"], n["Data.FunctorWithIndex"], n["Data.Maybe"]),
+        u = (n["Data.Monoid"], n["Data.Ord"], n["Data.Ordering"], n["Data.Semigroup"], n["Data.Show"], n["Data.Traversable"], n["Data.TraversableWithIndex"], n["Data.Unit"], n.Prelude, function () {
+          function n ( n ) {
+            this.value0 = n
+          }
+          return n.create = function ( t ) {
+            return new n(t)
+          }, n
+        }()),
+        f = function () {
+          function n ( n ) {
+            this.value0 = n
+          }
+          return n.create = function ( t ) {
+            return new n(t)
+          }, n
+        }(),
+        c = new a.Functor(function ( n ) {
+          return function ( t ) {
+            if ( t instanceof u ) return new u(t.value0);
+            if ( t instanceof f ) return new f(n(t.value0));
+            throw new Error("Failed pattern match at Data.Either (line 38, column 8 - line 38, column 52): " + [ t.constructor.name ])
+          }
+        }),
+        l = function ( n ) {
+          return function ( t ) {
+            return function ( r ) {
+              if ( r instanceof u ) return n(r.value0);
+              if ( r instanceof f ) return t(r.value0);
+              throw new Error("Failed pattern match at Data.Either (line 238, column 1 - line 238, column 64): " + [ n.constructor.name, t.constructor.name, r.constructor.name ])
+            }
+          }
+        },
+        s = new e.Apply(function () {
+          return c
+        }, function ( n ) {
+          return function ( t ) {
+            if ( n instanceof u ) return new u(n.value0);
+            if ( n instanceof f ) return a.map(c)(n.value0)(t);
+            throw new Error("Failed pattern match at Data.Either (line 82, column 1 - line 82, column 41): " + [ n.constructor.name, t.constructor.name ])
+          }
+        }),
+        d = new o.Bind(function () {
+          return s
+        }, l(function ( n ) {
+          return function ( t ) {
+            return new u(n)
+          }
+        })(function ( n ) {
+          return function ( t ) {
+            return t(n)
+          }
+        })),
+        p = new r.Applicative(function () {
+          return s
+        }, f.create);
+      t.Left = u, t.Right = f, t.either = l, t.note = function ( n ) {
+        return i.maybe(new u(n))(f.create)
+      }, t.functorEither = c, t.applyEither = s, t.applicativeEither = p, t.bindEither = d
+    }(n["Data.Either"] = n["Data.Either"] || {});
+
+    // Module: Data.Int (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Data.Int"] = n["Data.Int"] || {}).fromStringAsImpl = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            var e;
+            e = r < 11 ? "[0-" + (r - 1).toString() + "]" : 11 === r ? "[0-9a]" : "[0-9a-" + String.fromCharCode(86 + r) + "]";
+            var o = new RegExp("^[\\+\\-]?" + e + "+$", "i");
+            return function ( e ) {
+              if ( o.test(e) ) {
+                var a = parseInt(e, r);
+                return (0 | a) === a ? n(a) : t
+              }
+              return t
+            }
+          }
+        }
+      }
+    }();
+
+    // Module: Data.Int (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Data.Int"],
+        e = (n["Control.Category"], n["Control.Semigroupoid"], n["Data.Boolean"], n["Data.Bounded"], n["Data.CommutativeRing"], n["Data.DivisionRing"], n["Data.Eq"], n["Data.EuclideanRing"], n["Data.HeytingAlgebra"], n["Data.Int.Bits"], n["Data.Maybe"]),
+        o = (n["Data.Ord"], n["Data.Ordering"], n["Data.Ring"], n["Data.Semiring"], n["Data.Show"], n.Global, n.Math, n.Prelude, r.fromStringAsImpl(e.Just.create)(e.Nothing.value)),
+        a = o(10);
+      t.fromString = a, t.fromStringAs = o
+    }(n["Data.Int"] = n["Data.Int"] || {});
+
+    // Module: Data.String.Common (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Data.String.Common"] = n["Data.String.Common"] || {}).trim = function ( n ) {
+        return n.trim()
+      }
+    }();
+
+    // Module: Data.String.Common (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Data.String.Common"];
+      n["Data.Eq"], n["Data.Ordering"], n["Data.String.Pattern"], n.Prelude;
+      t.trim = r.trim
+    }(n["Data.String.Common"] = n["Data.String.Common"] || {});
+
+    // Module: Effect (partial definition)
+    !function ( n ) {
+      "use strict";
+      n.pureE = function ( n ) {
+        return function () {
+          return n
+        }
+      }, n.bindE = function ( n ) {
+        return function ( t ) {
+          return function () {
+            return t(n())()
+          }
+        }
+      }
+    }(n.Effect = n.Effect || {});
+
+    // Module: Effect (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n.Effect,
+        e = n["Control.Applicative"],
+        o = n["Control.Apply"],
+        a = n["Control.Bind"],
+        i = n["Control.Monad"],
+        u = n["Data.Functor"],
+        f = (n["Data.Monoid"], n["Data.Semigroup"], n.Prelude, new i.Monad(function () {
+          return s
+        }, function () {
+          return c
+        })),
+        c = new a.Bind(function () {
+          return l
+        }, r.bindE),
+        l = new o.Apply(function () {
+          return d
+        }, i.ap(f)),
+        s = new e.Applicative(function () {
+          return l
+        }, r.pureE),
+        d = new u.Functor(e.liftA1(s));
+      t.functorEffect = d, t.applyEffect = l, t.applicativeEffect = s, t.bindEffect = c, t.monadEffect = f
+    }(n.Effect = n.Effect || {});
+
+    // Module: Effect.Aff
+    !function ( n ) {
+      "use strict";
+      var t = function () {
+        var n = {}, t = "Pure", r = "Throw", e = "Catch", o = "Sync", a = "Async", i = "Bind", u = "Bracket",
+          f = "Fork", c = "Sequential", l = "Map", s = "Apply", d = "Alt", p = "Cons", D = "Resume", m = "Release",
+          h = "Finalizer", w = "Finalized", C = "Forked";
+
+        function g ( n, t, r, e ) {
+          this.tag = n, this._1 = t, this._2 = r, this._3 = e
+        }
+
+        function v ( n ) {
+          var t = function ( t, r, e ) {
+            return new g(n, t, r, e)
+          };
+          return t.tag = n, t
+        }
+
+        function y ( n ) {
+          return new g(t, void 0)
+        }
+
+        function E ( n ) {
+          try {
+            n()
+          } catch ( t ) {
+            setTimeout(function () {
+              throw t
+            }, 0)
+          }
+        }
+
+        function A ( n, t, r ) {
+          try {
+            return t(r())
+          } catch ( e ) {
+            return n(e)
+          }
+        }
+
+        function S ( n, t, r ) {
+          try {
+            return t(r())
+          } catch ( e ) {
+            return r(n(e))(), y
+          }
+        }
+
+        var _ = function () {
+          var n = 1024, t = 0, r = 0, e = new Array(n), o = !1;
+
+          function a () {
+            var a;
+            for ( o = !0; 0 !== t; ) t--, a = e[r], e[r] = void 0, r = (r + 1) % n, a();
+            o = !1
+          }
+
+          return {
+            isDraining: function () {
+              return o
+            }, enqueue: function ( i ) {
+              var u;
+              t === n && (u = o, a(), o = u), e[(r + t) % n] = i, t++, o || a()
+            }
+          }
+        }();
+        var b = 0, F = 1, P = 2, M = 3, B = 4, U = 5, k = 6;
+
+        function R ( n, l, s ) {
+          var d = 0, C = b, v = s, y = null, I = null, L = null, T = null, x = null, O = 0, q = 0, W = null, z = !0;
+
+          function H ( s ) {
+            for ( var q, j, K; ;) switch ( q = null, j = null, K = null, C ) {
+              case P:
+                C = F, v = L(v), null === T ? L = null : (L = T._1, T = T._2);
+                break;
+              case M:
+                n.isLeft(v) ? (C = U, y = v, v = null) : null === L ? C = U : (C = P, v = n.fromRight(v));
+                break;
+              case F:
+                switch ( v.tag ) {
+                  case i:
+                    L && (T = new g(p, L, T)), L = v._2, C = F, v = v._1;
+                    break;
+                  case t:
+                    null === L ? (C = U, v = n.right(v._1)) : (C = P, v = v._1);
+                    break;
+                  case o:
+                    C = M, v = A(n.left, n.right, v._1);
+                    break;
+                  case a:
+                    return C = B, void (v = S(n.left, v._1, function ( n ) {
+                      return function () {
+                        d === s && (d++, _.enqueue(function () {
+                          d === s + 1 && (C = M, v = n, H(d))
+                        }))
+                      }
+                    }));
+                  case r:
+                    C = U, y = n.left(v._1), v = null;
+                    break;
+                  case e:
+                    x = new g(p, v, null === L ? x : new g(D, L, T), I), L = null, T = null, C = F, v = v._1;
+                    break;
+                  case u:
+                    O++, x = new g(p, v, null === L ? x : new g(D, L, T), I), L = null, T = null, C = F, v = v._1;
+                    break;
+                  case f:
+                    C = M, q = R(n, l, v._2), l && l.register(q), v._1 && q.run(), v = n.right(q);
+                    break;
+                  case c:
+                    C = F, v = N(n, l, v._1)
+                }
+                break;
+              case U:
+                if ( L = null, T = null, null === x ) C = k, v = I || y || v; else switch ( q = x._3, K = x._1, x = x._2, K.tag ) {
+                  case e:
+                    I && I !== q ? C = U : y && (C = F, v = K._2(n.fromLeft(y)), y = null);
+                    break;
+                  case D:
+                    I && I !== q || y ? C = U : (L = K._1, T = K._2, C = P, v = n.fromRight(v));
+                    break;
+                  case u:
+                    O--, null === y && (j = n.fromRight(v), x = new g(p, new g(m, K._2, j), x, q), (I === q || O > 0) && (C = F, v = K._3(j)));
+                    break;
+                  case m:
+                    O++, x = new g(p, new g(w, v, y), x, I), C = F, v = I && I !== q ? K._1.killed(n.fromLeft(I))(K._2) : y ? K._1.failed(n.fromLeft(y))(K._2) : K._1.completed(n.fromRight(v))(K._2), y = null;
+                    break;
+                  case h:
+                    O++, x = new g(p, new g(w, v, y), x, I), C = F, v = K._1;
+                    break;
+                  case w:
+                    O--, C = U, v = K._1, y = K._2
+                }
+                break;
+              case k:
+                for ( var J in W ) W.hasOwnProperty(J) && (z = z && W[J].rethrow, E(W[J].handler(v)));
+                return W = null, void (I && y ? setTimeout(function () {
+                  throw n.fromLeft(y)
+                }, 0) : n.isLeft(v) && z && setTimeout(function () {
+                  if ( z ) throw n.fromLeft(v)
+                }, 0));
+              case b:
+                C = F;
+                break;
+              case B:
+                return
+            }
+          }
+
+          function j ( n ) {
+            return function () {
+              if ( C === k ) return z = z && n.rethrow, n.handler(v)(), function () {};
+              var t = q++;
+              return (W = W || {})[t] = n, function () {
+                null !== W && delete W[t]
+              }
+            }
+          }
+
+          return {
+            kill: function ( t, r ) {
+              return function () {
+                if ( C === k ) return r(n.right(void 0))(), function () {};
+                var e = j({ rethrow: !1, handler: function () {
+                    return r(n.right(void 0))
+                  } })();
+                switch ( C ) {
+                  case b:
+                    I = n.left(t), C = k, v = I, H(d);
+                    break;
+                  case B:
+                    null === I && (I = n.left(t)), 0 === O && (C === B && (x = new g(p, new g(h, v(t)), x, I)), C = U, v = null, y = null, H(++d));
+                    break;
+                  default:
+                    null === I && (I = n.left(t)), 0 === O && (C = U, v = null, y = null)
+                }
+                return e
+              }
+            }, join: function ( n ) {
+              return function () {
+                var t = j({ rethrow: !1, handler: n })();
+                return C === b && H(d), t
+              }
+            }, onComplete: j, isSuspended: function () {
+              return C === b
+            }, run: function () {
+              C === b && (_.isDraining() ? H(d) : _.enqueue(function () {
+                H(d)
+              }))
+            }
+          }
+        }
+
+        function I ( t, r, e, o ) {
+          var i = 0, u = {}, f = 0, c = {}, D = new Error("[ParAff] Early exit"), m = null, h = n;
+
+          function w ( r, e, o ) {
+            var a, i, f = e, c = null, D = null, m = 0, h = {};
+            n: for ( ;; ) switch ( a = null, f.tag ) {
+              case C:
+                if ( f._3 === n && (a = u[f._1], h[m++] = a.kill(r, function ( n ) {
+                  return function () {
+                    0 === --m && o(n)()
+                  }
+                })), null === c ) break n;
+                f = c._2, null === D ? c = null : (c = D._1, D = D._2);
+                break;
+              case l:
+                f = f._2;
+                break;
+              case s:
+              case d:
+                c && (D = new g(p, c, D)), c = f, f = f._1
+            }
+            if ( 0 === m ) o(t.right(void 0))(); else for ( i = 0, a = m; i < a; i++ ) h[i] = h[i]();
+            return h
+          }
+
+          function v ( r ) {
+            return function ( e ) {
+              return function () {
+                delete u[r._1], r._3 = e, function r ( e, a, i ) {
+                  var u, p, h, C, g, v;
+                  for ( t.isLeft(e) ? (u = e, p = null) : (p = e, u = null); ;) {
+                    if ( h = null, C = null, g = null, v = null, null !== m ) return;
+                    if ( null === a ) return void o(u || p)();
+                    if ( a._3 !== n ) return;
+                    switch ( a.tag ) {
+                      case l:
+                        null === u ? (a._3 = t.right(a._1(t.fromRight(p))), p = a._3) : a._3 = u;
+                        break;
+                      case s:
+                        if ( h = a._1._3, C = a._2._3, u ) {
+                          if ( a._3 = u, g = !0, v = f++, c[v] = w(D, u === h ? a._2 : a._1, function () {
+                            return function () {
+                              delete c[v], g ? g = !1 : null === i ? r(u, null, null) : r(u, i._1, i._2)
+                            }
+                          }), g ) return void (g = !1)
+                        } else {
+                          if ( h === n || C === n ) return;
+                          p = t.right(t.fromRight(h)(t.fromRight(C))), a._3 = p
+                        }
+                        break;
+                      case d:
+                        if ( h = a._1._3, C = a._2._3, h === n && t.isLeft(C) || C === n && t.isLeft(h) ) return;
+                        if ( h !== n && t.isLeft(h) && C !== n && t.isLeft(C) ) u = p === h ? C : h, p = null, a._3 = u; else if ( a._3 = p, g = !0, v = f++, c[v] = w(D, p === h ? a._2 : a._1, function () {
+                          return function () {
+                            delete c[v], g ? g = !1 : null === i ? r(p, null, null) : r(p, i._1, i._2)
+                          }
+                        }), g ) return void (g = !1)
+                    }
+                    null === i ? a = null : (a = i._1, i = i._2)
+                  }
+                }(e, r._2._1, r._2._2)
+              }
+            }
+          }
+
+          return function () {
+            var o, a, f = F, c = e, D = null, m = null;
+            n: for ( ;; ) switch ( o = null, a = null, f ) {
+              case F:
+                switch ( c.tag ) {
+                  case l:
+                    D && (m = new g(p, D, m)), D = new g(l, c._1, n, n), c = c._2;
+                    break;
+                  case s:
+                    D && (m = new g(p, D, m)), D = new g(s, n, c._2, n), c = c._1;
+                    break;
+                  case d:
+                    D && (m = new g(p, D, m)), D = new g(d, n, c._2, n), c = c._1;
+                    break;
+                  default:
+                    a = i++, f = U, o = c, c = new g(C, a, new g(p, D, m), n), (o = R(t, r, o)).onComplete({
+                      rethrow: !1,
+                      handler: v(c)
+                    })(), u[a] = o, r && r.register(o)
+                }
+                break;
+              case U:
+                if ( null === D ) break n;
+                D._1 === n ? (D._1 = c, f = F, c = D._2, D._2 = n) : (D._2 = c, c = D, null === m ? D = null : (D = m._1, m = m._2))
+            }
+            for ( h = c, a = 0; a < i; a++ ) u[a].run()
+          }(), function ( n ) {
+            return new g(a, function ( r ) {
+              return function () {
+                return function ( n, r ) {
+                  var e;
+                  for ( var o in m = t.left(n), c ) if ( c.hasOwnProperty(o) ) for ( o in e = c[o] ) e.hasOwnProperty(o) && e[o]();
+                  c = null;
+                  var i = w(n, h, r);
+                  return function ( n ) {
+                    return new g(a, function () {
+                      for ( var n in i ) i.hasOwnProperty(n) && i[n]()
+                    })
+                  }
+                }(n, r)
+              }
+            })
+          }
+        }
+
+        function N ( n, t, r ) {
+          return new g(a, function ( e ) {
+            return function () {
+              return I(n, t, r, e)
+            }
+          })
+        }
+
+        return g.EMPTY = n, g.Pure = v(t), g.Throw = v(r), g.Catch = v(e), g.Sync = v(o), g.Async = v(a), g.Bind = v(i), g.Bracket = v(u), g.Fork = v(f), g.Seq = v(c), g.ParMap = v(l), g.ParApply = v(s), g.ParAlt = v(d), g.Fiber = R, g.Supervisor = function ( n ) {
+          var t = {}, r = 0, e = 0;
+          return {
+            register: function ( n ) {
+              var o = r++;
+              n.onComplete({
+                rethrow: !0, handler: function ( n ) {
+                  return function () {
+                    e--, delete t[o]
+                  }
+                }
+              }), t[o] = n, e++
+            }, isEmpty: function () {
+              return 0 === e
+            }, killAll: function ( a, i ) {
+              return function () {
+                var u = 0, f = {};
+
+                function c ( r ) {
+                  f[r] = t[r].kill(a, function ( t ) {
+                    return function () {
+                      delete f[r], u--, n.isLeft(t) && n.fromLeft(t) && setTimeout(function () {
+                        throw n.fromLeft(t)
+                      }, 0), 0 === u && i()
+                    }
+                  })()
+                }
+
+                for ( var l in t ) t.hasOwnProperty(l) && (u++, c(l));
+                return t = {}, r = 0, e = 0, function ( n ) {
+                  return new g(o, function () {
+                    for ( var n in f ) f.hasOwnProperty(n) && f[n]()
+                  })
+                }
+              }
+            }
+          }
+        }, g.Scheduler = _, g.nonCanceler = y, g
+      }();
+      n._pure = t.Pure, n._map = function ( n ) {
+        return function ( r ) {
+          return r.tag === t.Pure.tag ? t.Pure(n(r._1)) : t.Bind(r, function ( r ) {
+            return t.Pure(n(r))
+          })
+        }
+      }, n._bind = function ( n ) {
+        return function ( r ) {
+          return t.Bind(n, r)
+        }
+      }, n._liftEffect = t.Sync, n._parAffMap = function ( n ) {
+        return function ( r ) {
+          return t.ParMap(n, r)
+        }
+      }, n._parAffApply = function ( n ) {
+        return function ( r ) {
+          return t.ParApply(n, r)
+        }
+      }, n.makeAff = t.Async, n._makeFiber = function ( n, r ) {
+        return function () {
+          return t.Fiber(n, null, r)
+        }
+      }, n._sequential = t.Seq
+    }(n["Effect.Aff"] = n["Effect.Aff"] || {});
+
+    // Module: Effect.Class
+    !function ( t ) {
+      "use strict";
+      n["Control.Category"], n["Control.Monad"], n.Effect;
+      t.liftEffect = function ( n ) {
+        return n.liftEffect
+      }, t.MonadEffect = function ( n, t ) {
+        this.Monad0 = n, this.liftEffect = t
+      }
+    }(n["Effect.Class"] = n["Effect.Class"] || {});
+
+    // Module: Effect.Ref (partial definition)
+    !function ( n ) {
+      "use strict";
+      n.new = function ( n ) {
+        return function () {
+          return { value: n }
+        }
+      }, n.read = function ( n ) {
+        return function () {
+          return n.value
+        }
+      }, n.write = function ( n ) {
+        return function ( t ) {
+          return function () {
+            return t.value = n, {}
+          }
+        }
+      }
+    }(n["Effect.Ref"] = n["Effect.Ref"] || {});
+
+    // Module: Effect.Ref (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Effect.Ref"];
+      n["Data.Function"], n["Data.Functor"], n.Effect, n.Prelude;
+      t.new = r.new, t.read = r.read, t.write = r.write
+    }(n["Effect.Ref"] = n["Effect.Ref"] || {});
+
+    // Module: Control.Parallel.Class
+    !function ( t ) {
+      "use strict";
+      n["Control.Alternative"], n["Control.Apply"], n["Control.Bind"], n["Control.Monad.Cont.Trans"], n["Control.Monad.Except.Trans"], n["Control.Monad.Maybe.Trans"], n["Control.Monad.Reader.Trans"], n["Control.Monad.Writer.Trans"], n["Control.Plus"], n["Control.Semigroupoid"], n["Data.Either"], n["Data.Function"], n["Data.Functor"], n["Data.Functor.Compose"], n["Data.Maybe"], n["Data.Newtype"], n["Data.Unit"], n["Effect.Class"], n["Effect.Ref"], n.Prelude;
+      t.parallel = function ( n ) {
+        return n.parallel
+      }, t.sequential = function ( n ) {
+        return n.sequential
+      }, t.Parallel = function ( n, t, r, e ) {
+        this.Applicative1 = n, this.Monad0 = t, this.parallel = r, this.sequential = e
+      }
+    }(n["Control.Parallel.Class"] = n["Control.Parallel.Class"] || {});
+
+    // Module: Control.Parallel
+    !function ( t ) {
+      "use strict";
+      n["Control.Alternative"], n["Control.Apply"];
+      var r = n["Control.Category"],
+        e = n["Control.Parallel.Class"],
+        o = (n["Control.Semigroupoid"], n["Data.Foldable"]),
+        a = (n["Data.Traversable"], n.Prelude, function ( n ) {
+          return function ( t ) {
+            return function ( r ) {
+              return function ( a ) {
+                return e.sequential(n)(o.traverse_(n.Applicative1())(t)(function ( t ) {
+                  return e.parallel(n)(r(t))
+                })(a))
+              }
+            }
+          }
+        });
+      t.parTraverse_ = a, t.parSequence_ = function ( n ) {
+        return function ( t ) {
+          return a(n)(t)(r.identity(r.categoryFn))
+        }
+      }
+    }(n["Control.Parallel"] = n["Control.Parallel"] || {});
+
+    // Module: Effect.Exception (partial definition)
+    !function ( n ) {
+      "use strict";
+      n.error = function ( n ) {
+        return new Error(n)
+      }, n.throwException = function ( n ) {
+        return function () {
+          throw n
+        }
+      }
+    }(n["Effect.Exception"] = n["Effect.Exception"] || {});
+
+    // Module: Effect.Exception (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Effect.Exception"];
+      n["Control.Applicative"], n["Control.Semigroupoid"], n["Data.Either"], n["Data.Functor"], n["Data.Maybe"], n["Data.Show"], n.Effect, n.Prelude;
+      t.throw = function ( n ) {
+        return r.throwException(r.error(n))
+      }
+    }(n["Effect.Exception"] = n["Effect.Exception"] || {});
+
+    // Module: Effect.Aff (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Effect.Aff"],
+        e = (n["Control.Alt"], n["Control.Alternative"], n["Control.Applicative"]),
+        o = n["Control.Apply"],
+        a = n["Control.Bind"],
+        i = (n["Control.Lazy"], n["Control.Monad"]),
+        u = (n["Control.Monad.Error.Class"], n["Control.Monad.Rec.Class"], n["Control.Parallel"]),
+        f = n["Control.Parallel.Class"],
+        c = (n["Control.Plus"], n["Control.Semigroupoid"], n["Data.Either"]),
+        l = n["Data.Foldable"],
+        s = n["Data.Function"],
+        d = (n["Data.Function.Uncurried"], n["Data.Functor"]),
+        p = n["Data.Monoid"],
+        D = (n["Data.Newtype"], n["Data.Semigroup"]),
+        m = (n["Data.Time.Duration"], n["Data.Unit"]),
+        h = n.Effect,
+        w = n["Effect.Class"],
+        C = (n["Effect.Exception"], n["Effect.Unsafe"], n["Partial.Unsafe"]),
+        g = (n.Prelude, n["Unsafe.Coerce"]),
+        v = new d.Functor(r._parAffMap),
+        y = new d.Functor(r._map),
+        E = {
+          isLeft: function ( n ) {
+            if ( n instanceof c.Left ) return !0;
+            if ( n instanceof c.Right ) return !1;
+            throw new Error("Failed pattern match at Effect.Aff (line 390, column 12 - line 392, column 20): " + [ n.constructor.name ])
+          }, fromLeft: function ( n ) {
+            if ( n instanceof c.Left ) return n.value0;
+            if ( n instanceof c.Right ) return C.unsafeCrashWith("unsafeFromLeft: Right");
+            throw new Error("Failed pattern match at Effect.Aff (line 395, column 20 - line 399, column 3): " + [ n.constructor.name ])
+          }, fromRight: function ( n ) {
+            if ( n instanceof c.Right ) return n.value0;
+            if ( n instanceof c.Left ) return C.unsafeCrashWith("unsafeFromRight: Left");
+            throw new Error("Failed pattern match at Effect.Aff (line 400, column 21 - line 402, column 31): " + [ n.constructor.name ])
+          }, left: c.Left.create, right: c.Right.create
+        },
+        A = function ( n ) {
+          return function () {
+            var t = function ( n ) {
+              return r._makeFiber(E, n)
+            }(n)();
+            return t.run(), t
+          }
+        },
+        S = new o.Apply(function () {
+          return v
+        }, r._parAffApply),
+        _ = new i.Monad(function () {
+          return P
+        }, function () {
+          return b
+        }),
+        b = new a.Bind(function () {
+          return F
+        }, r._bind),
+        F = new o.Apply(function () {
+          return y
+        }, i.ap(_)),
+        P = new e.Applicative(function () {
+          return F
+        }, r._pure),
+        M = new w.MonadEffect(function () {
+          return _
+        }, r._liftEffect),
+        B = new f.Parallel(function () {
+          return U
+        }, function () {
+          return _
+        }, g.unsafeCoerce, r._sequential),
+        U = new e.Applicative(function () {
+          return S
+        }, function ( n ) {
+          return f.parallel(B)(e.pure(P)(n))
+        }),
+        k = new D.Semigroup(function ( n ) {
+          return function ( t ) {
+            return function ( r ) {
+              return u.parSequence_(B)(l.foldableArray)([ n(r), t(r) ])
+            }
+          }
+        }),
+        R = s.const(e.pure(P)(m.unit)),
+        I = new p.Monoid(function () {
+          return k
+        }, R);
+      t.launchAff = A, t.launchAff_ = function ( n ) {
+        return d.void(h.functorEffect)(A(n))
+      }, t.nonCanceler = R, t.functorAff = y, t.applyAff = F, t.applicativeAff = P, t.bindAff = b, t.monadAff = _, t.monadEffectAff = M, t.functorParAff = v, t.applyParAff = S, t.applicativeParAff = U, t.parallelAff = B, t.semigroupCanceler = k, t.monoidCanceler = I, t.makeAff = r.makeAff
+    }(n["Effect.Aff"] = n["Effect.Aff"] || {});
+
+    // Module: Node.Encoding
+    !function ( t ) {
+      "use strict";
+      n["Node.Encoding"];
+      var r = n["Data.Show"],
+        e = (n.Prelude, function () {
+          function n () {}
+          return n.value = new n, n
+        }()),
+        o = function () {
+          function n () {}
+          return n.value = new n, n
+        }(),
+        a = function () {
+          function n () {}
+          return n.value = new n, n
+        }(),
+        i = function () {
+          function n () {}
+          return n.value = new n, n
+        }(),
+        u = function () {
+          function n () {}
+          return n.value = new n, n
+        }(),
+        f = function () {
+          function n () {}
+          return n.value = new n, n
+        }(),
+        c = function () {
+          function n () {}
+          return n.value = new n, n
+        }(),
+        l = function () {
+          function n () {}
+          return n.value = new n, n
+        }(),
+        s = new r.Show(function ( n ) {
+          if ( n instanceof e ) return "ASCII";
+          if ( n instanceof o ) return "UTF8";
+          if ( n instanceof a ) return "UTF16LE";
+          if ( n instanceof i ) return "UCS2";
+          if ( n instanceof u ) return "Base64";
+          if ( n instanceof f ) return "Latin1";
+          if ( n instanceof c ) return "Binary";
+          if ( n instanceof l ) return "Hex";
+          throw new Error("Failed pattern match at Node.Encoding (line 19, column 1 - line 19, column 39): " + [ n.constructor.name ])
+        });
+      t.ASCII = e, t.UTF8 = o, t.UTF16LE = a, t.UCS2 = i, t.Base64 = u, t.Latin1 = f, t.Binary = c, t.Hex = l, t.encodingToNode = function ( n ) {
+        if ( n instanceof e ) return "ascii";
+        if ( n instanceof o ) return "utf8";
+        if ( n instanceof a ) return "utf16le";
+        if ( n instanceof i ) return "ucs2";
+        if ( n instanceof u ) return "base64";
+        if ( n instanceof f ) return "latin1";
+        if ( n instanceof c ) return "binary";
+        if ( n instanceof l ) return "hex";
+        throw new Error("Failed pattern match at Node.Encoding (line 31, column 1 - line 31, column 37): " + [ n.constructor.name ])
+      }, t.showEncoding = s
+    }(n["Node.Encoding"] = n["Node.Encoding"] || {});
+
+    // Module: Node.Process (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Node.Process"] = n["Node.Process"] || {}).process = process
+    }();
+
+    // Module: Node.Stream (partial definition)
+    !function ( n ) {
+      "use strict";
+      n.readChunkImpl = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            if ( r instanceof Buffer ) return t(r);
+            if ( "string" == typeof r ) return n(r);
+            throw new Error("Node.Stream.readChunkImpl: Unrecognised chunk type; expected String or Buffer, got: " + r)
+          }
+        }
+      }, n.onDataEitherImpl = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            return function () {
+              t.on("data", function ( t ) {
+                r(n(t))()
+              })
+            }
+          }
+        }
+      }, n.onEnd = function ( n ) {
+        return function ( t ) {
+          return function () {
+            n.on("end", t)
+          }
+        }
+      }, n.write = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            return function () {
+              return n.write(t, null, r)
+            }
+          }
+        }
+      }, n.writeStringImpl = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            return function ( e ) {
+              return function () {
+                return n.write(r, t, e)
+              }
+            }
+          }
+        }
+      }
+    }(n["Node.Stream"] = n["Node.Stream"] || {});
+
+    // Module: Node.Buffer (partial definition)
+    !function ( t ) {
+      "use strict";
+      (n["Node.Buffer"] = n["Node.Buffer"] || {}).toStringImpl = function ( n ) {
+        return function ( t ) {
+          return function () {
+            return t.toString(n)
+          }
+        }
+      }
+    }();
+
+    // Module: Node.Buffer (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Node.Buffer"],
+        e = (n["Control.Semigroupoid"], n["Data.ArrayBuffer.Types"], n["Data.Maybe"], n["Data.Show"], n.Effect, n["Node.Encoding"]);
+      n.Prelude;
+      t.toString = function ( n ) {
+        return r.toStringImpl(e.encodingToNode(n))
+      }
+    }(n["Node.Buffer"] = n["Node.Buffer"] || {});
+
+    // Module: Node.Stream (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Node.Stream"],
+        e = n["Control.Applicative"],
+        o = n["Control.Bind"],
+        a = n["Data.Either"],
+        i = (n["Data.Functor"], n["Data.Maybe"], n["Data.Show"]),
+        u = n.Effect,
+        f = n["Effect.Exception"],
+        c = n["Node.Buffer"],
+        l = n["Node.Encoding"],
+        s = (n.Prelude, r.readChunkImpl(a.Left.create)(a.Right.create)),
+        d = function ( n ) {
+          return function ( t ) {
+            return r.onDataEitherImpl(s)(n)(t)
+          }
+        },
+        p = function ( n ) {
+          return function ( t ) {
+            return d(n)(o.composeKleisliFlipped(u.bindEffect)(t)(function ( n ) {
+              if ( n instanceof a.Left ) return f.throw("Stream encoding should not be set");
+              if ( n instanceof a.Right ) return e.pure(u.applicativeEffect)(n.value0);
+              throw new Error("Failed pattern match at Node.Stream (line 94, column 5 - line 98, column 17): " + [ n.constructor.name ])
+            }))
+          }
+        };
+      t.onData = p, t.onDataString = function ( n ) {
+        return function ( t ) {
+          return function ( r ) {
+            return p(n)(o.composeKleisliFlipped(u.bindEffect)(r)(c.toString(t)))
+          }
+        }
+      }, t.writeString = function ( n ) {
+        return function ( t ) {
+          return r.writeStringImpl(n)(i.show(l.showEncoding)(t))
+        }
+      }, t.onEnd = r.onEnd
+    }(n["Node.Stream"] = n["Node.Stream"] || {});
+
+    // Module: Node.Process (full definition)
+    !function ( t ) {
+      "use strict";
+      var r = n["Node.Process"],
+        e = (n["Data.Functor"], n["Data.Maybe"], n["Data.Posix"], n["Data.Posix.Signal"], n.Effect, n["Foreign.Object"], n["Node.Platform"], n["Node.Stream"], n.Prelude, n["Unsafe.Coerce"], r.process.stdout),
+        o = r.process.stdin;
+      t.stdin = o, t.stdout = e
+    }(n["Node.Process"] = n["Node.Process"] || {});
+
+    // Module: ABC111B - main application logic
+    !function ( t ) {
+      "use strict";
+      var r = n["Control.Applicative"],
+        e = n["Control.Bind"],
+        o = n["Control.Category"],
+        a = n["Data.Array"],
+        i = n["Data.Either"],
+        u = n["Data.Functor"],
+        f = n["Data.Int"],
+        c = n["Data.Monoid"],
+        l = (n["Data.Ord"], n["Data.Semigroup"], n["Data.Semiring"]),
+        s = n["Data.Show"],
+        d = (n["Data.String"], n["Data.String.Common"]),
+        p = n["Data.Unit"],
+        D = n.Effect,
+        m = n["Effect.Aff"],
+        h = n["Effect.Class"],
+        w = n["Effect.Ref"],
+        C = n["Node.Encoding"],
+        g = n["Node.Process"],
+        v = n["Node.Stream"],
+        y = n["Partial.Unsafe"],
+        E = (n.Prelude, function ( n ) {
+          return i.either(function ( n ) {
+            return y.unsafeCrashWith(n)
+          })(o.identity(o.categoryFn))(e.bind(i.bindEither)(i.note("n")(f.fromString(d.trim(n))))(function ( n ) {
+            return r.pure(i.applicativeEither)(s.show(s.showInt)((t = n, a.filter(function ( n ) {
+              return n >= t
+            })(u.map(u.functorArray)(l.mul(l.semiringInt)(111))(a.range(1)(9)))[0])) + "\n");
+            var t
+          }))
+        }),
+        A = m.makeAff(function ( n ) {
+          return function () {
+            var t = w.new("")();
+            return v.onDataString(g.stdin)(C.UTF8.value)(function ( n ) {
+              return function () {
+                var r = w.read(t)();
+                return w.write(r + n)(t)()
+              }
+            })(), v.onEnd(g.stdin)(function () {
+              var e = w.read(t)();
+              return n(r.pure(i.applicativeEither)(e))()
+            })(), c.mempty(m.monoidCanceler)
+          }
+        }),
+        S = m.launchAff_(e.bind(m.bindAff)(A)(function ( n ) {
+          return e.bind(m.bindAff)(r.pure(m.applicativeAff)(E(n)))(function ( n ) {
+            return h.liftEffect(m.monadEffectAff)((t = n, u.void(D.functorEffect)(v.writeString(g.stdout)(C.UTF8.value)(t)(r.pure(D.applicativeEffect)(p.unit)))));
+            var t
+          })
+        }));
+      t.main = S, t.solve = E
+    }(n.ABC111B = n.ABC111B || {}), n.ABC111B.main();
+  }, {} ],
+}, {}, [ "Focm" ], null);

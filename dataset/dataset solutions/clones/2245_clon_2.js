@@ -1,0 +1,51 @@
+function OperateOnContent
+(
+  sourceText
+)
+{
+  sourceText
+    =
+    sourceText
+      .trim
+        (
+        )
+  ;
+
+  const
+    nextValue
+    =
+    sourceText
+      .charCodeAt
+        (
+          0
+        )
+    +
+    1
+  ;
+
+  console
+    .log
+      (
+        String
+          .fromCharCode
+            (
+              nextValue
+            )
+      )
+  ;
+}
+
+OperateOnContent
+(
+  require
+    (
+      "fs"
+    )
+    .readFileSync
+      (
+        "/dev/stdin"
+        ,
+        "utf8"
+      )
+)
+;

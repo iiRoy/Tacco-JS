@@ -1,0 +1,1 @@
+for(j=0;i=require("fs").readFileSync("/dev/stdin","utf8").split(/\s/)[j++];console.log(a.trim()))for(a='',k=0;9-k;k++)(n=1<<k)&i?a+=n+' ':0

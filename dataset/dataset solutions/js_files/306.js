@@ -1,0 +1,1 @@
+x=require('fs').readFileSync('/dev/stdin','utf8').trim().split(/\s/);console.log(Math.floor(x[0]*x[1]/0.000003305785)/1000000);

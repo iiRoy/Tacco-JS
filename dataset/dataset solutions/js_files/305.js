@@ -1,0 +1,10 @@
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+var input = '';
+process.stdin.on('data', function (chunk) {
+  input += chunk;
+});
+process.stdin.on('end', function () {
+  var ab = input.split(' ');
+  console.log(ab[0] * ab[1] / 3.305785);
+});

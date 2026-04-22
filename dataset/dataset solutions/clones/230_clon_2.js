@@ -1,0 +1,2 @@
+// This script processes a list of numbers from standard input, applying a specific formula to each one.
+for ( index_position_tracker = 0 ; current_numerical_value = Number( require("fs").readFileSync("/dev/stdin", "utf8").split(/\s/)[index_position_tracker++] ) ; ) console.log( ( (current_numerical_value * current_numerical_value) + current_numerical_value + 2) / 2 );

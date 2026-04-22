@@ -1,0 +1,52 @@
+function Main(input) {
+	var inputArr = input.split('\n');
+	var cards='';
+	for(var i=0;true;i++){
+		if(isNaN(inputArr[i])){
+			if(i!==0)output(cards);
+			cards = inputArr[i];
+			if(cards=='-'){
+				break;
+			}else{
+				i++;
+			}
+		}else{
+			cards = cards.slice(toInt(inputArr[i])) + cards.slice(0,toInt(inputArr[i]));
+		}
+	}
+}
+//??°??????????????¢??°??¨(??????)
+function ascendingOrder(val1,val2){
+    return val1 - val2;
+}
+//??°??????????????¢??°??¨(??????)
+function descendingOrder(val1,val2){
+    return val2 - val1;
+}
+//??°??????
+function toInt(str){
+    return parseInt(str, 10);
+}
+//????????????
+function toStr(num){
+    return num.toString(10);
+}
+function output(str){
+	if(_Isdebug){
+		document.getElementById("Console").value+=(str+"\n");
+	}
+	console.log(str);
+}
+
+//???????????°??¨
+var _Isdebug = false;
+
+function debug(){
+	_Isdebug = true;
+	var input = document.getElementById("Console").value;
+	document.getElementById("Console").value+="\n";
+	Main(input);
+}
+
+//??\??????????????????
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

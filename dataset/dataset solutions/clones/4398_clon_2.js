@@ -1,0 +1,70 @@
+function ProcessTextualData
+  (
+    incomingContent
+  )
+{
+  let
+    targetStringSegment
+    =
+    incomingContent
+      .split
+      (
+        "\n"
+      )
+      [0]
+  ;
+
+  for
+  (
+    let characterValue
+    =
+    "a".charCodeAt(0)
+    ;
+    characterValue
+    <=
+    "z".charCodeAt(0)
+    ;
+    characterValue++
+  )
+  {
+    if
+    (
+      !
+      targetStringSegment
+        .includes
+        (
+          String.fromCharCode(characterValue)
+        )
+    )
+    {
+      console
+        .log
+        (
+          String.fromCharCode(characterValue)
+        )
+      ;
+      return
+      ;
+    }
+  }
+
+  console
+    .log
+    (
+      "None"
+    )
+  ;
+}
+
+ProcessTextualData
+(
+  require
+    (
+      "fs"
+    )
+    .readFileSync
+    (
+      "/dev/stdin", "utf8"
+    )
+)
+;

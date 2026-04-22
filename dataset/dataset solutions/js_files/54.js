@@ -1,0 +1,1 @@
+q=[];require("fs").readFileSync("/dev/stdin","utf8").trim().split('\n').map(function(i){+i?q.push(i):console.log(q.pop())})
