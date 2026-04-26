@@ -1,3 +1,6 @@
+// -- Example path: ../dataset\'dataset general'\js_files\2.js
+// -- Execution command: node Tokenizer-Tokenizr.js ../dataset\'dataset general'\js_files\2.js
+
 import fs           from "fs"
 import { Tokenizr } from "tokenizr"
 

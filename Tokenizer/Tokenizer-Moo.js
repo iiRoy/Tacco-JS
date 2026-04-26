@@ -1,4 +1,3 @@
-// -- Execution command: node tokenize-tokenizr.js /path/to/your/file.js
 // -- Example path: ../dataset\'dataset general'\js_files\2.js
 // -- Execution command: node Tokenizer-Moo.js ../dataset\'dataset general'\js_files\2.js
 
