@@ -4,10 +4,9 @@
 import fs           from "fs"
 import { Tokenizr } from "tokenizr"
 
-// ── 1. Create the lexer instance ────────────────────────────────────────────
 const lexer = new Tokenizr();
 
-// ── 2. Definition of Token rules ────────────────────────────────────────────
+// Definition of Token rules 
 
 // Keywords list to check against Ident matches
 const keywords = [
@@ -23,13 +22,14 @@ const keywords = [
   'null', 'undefined',
 ];
 
-// ── 1. Whitespace and comments (ignored)
+// Whitespace and comments (Ignored)
 lexer.rule(/\r/,                                            (ctx) => { ctx.ignore(); });
 lexer.rule(/[ \t]+/,                                        (ctx) => { ctx.ignore(); });
 lexer.rule(/\n/,                                            (ctx) => { ctx.ignore(); });
 lexer.rule(/\/\/[^\n]*/,                                    (ctx) => { ctx.ignore(); });
 lexer.rule(/\/\*[\s\S]*?\*\//,                              (ctx) => { ctx.ignore(); });
 
+// Tokenization of main data types
 lexer.rule(/true|false/,                                    (ctx) => { ctx.accept('Boolean');           }); // Boolean
 lexer.rule(/[0-9]+(\.[0-9]+)?/,                             (ctx) => { ctx.accept('Number');            }); // Number
 lexer.rule(/([0-9]+n)|(BigInt\([0-9]+\))/,                  (ctx) => { ctx.accept('Bigint');            }); // Bigint
@@ -40,6 +40,7 @@ lexer.rule(/\{[a-zA-Z]+_?:\ ?"(?:\\["\\]|[^\n"\\])*"(?:,\ ?[a-zA-Z]+_?:\ ?"(?:\\
 lexer.rule(/\[(?:"(?:\\["\\]|[^\n"\\])*"|[0-9]+)(?:,\ ?(?:"(?:\\["\\]|[^\n"\\])*"|[0-9]+))*\]/,          (ctx) => { ctx.accept('Array');  }); // Array
 lexer.rule(/new Date\(("[0-9]+-[0-9]+-[0-9]+")?\)/,      (ctx) => { ctx.accept('Date');              }); // Date
 
+// Tokenization of operators
 lexer.rule(/>>>=/,      (ctx) => { ctx.accept('Operator'); }); 
 lexer.rule(/\*\*=/,     (ctx) => { ctx.accept('Operator'); });  
 lexer.rule(/<<=/,       (ctx) => { ctx.accept('Operator'); });
@@ -88,8 +89,7 @@ lexer.rule(/>/,         (ctx) => { ctx.accept('Operator'); });
 lexer.rule(/\?/,        (ctx) => { ctx.accept('Operator'); });
 lexer.rule(/\\/,        (ctx) => { ctx.accept('Operator'); });  
 
-// Keywords and Idents are handled together:
-// match any identifier-like word, then check if it's a keyword
+// Tokenization of Identifies and Keywords
 lexer.rule(/[a-zA-Z_$][a-zA-Z0-9_$]*/,                     (ctx, match) => {
   if (keywords.includes(match[0]))
     ctx.accept('Keyword');
@@ -97,6 +97,7 @@ lexer.rule(/[a-zA-Z_$][a-zA-Z0-9_$]*/,                     (ctx, match) => {
     ctx.accept('Ident');
 });
 
+// Tokenization of special characters
 lexer.rule(/\(/,  (ctx) => { ctx.accept('Lparen');   });
 lexer.rule(/\)/,  (ctx) => { ctx.accept('Rparen');   });
 lexer.rule(/\{/,  (ctx) => { ctx.accept('Lbrace');   });
@@ -109,12 +110,16 @@ lexer.rule(/=/,   (ctx) => { ctx.accept('Assign');   });
 lexer.rule(/\./,  (ctx) => { ctx.accept('Dot');      });
 lexer.rule(/:/,   (ctx) => { ctx.accept('Colon');    });
 
+
+// Identification of illegal characters
+/*
 lexer.rule(/./,   (ctx, match) => {
   console.error(`Unrecognized: "${match[0]}"`);
   ctx.ignore();
 });
+*/
 
-// ── 3. Read the file from the path given as a CLI argument ──────────────────
+// Reading of the file from the path given
 const filePath = process.argv[2];
 
 if (!filePath) {
@@ -124,7 +129,6 @@ if (!filePath) {
 
 const source = fs.readFileSync(filePath, 'utf-8');
 
-// ── 4. Feed the source and print tokens ─────────────────────────────────────
 lexer.input(source);
 
 lexer.tokens().forEach(token => {
