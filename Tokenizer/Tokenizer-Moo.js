@@ -2,61 +2,127 @@
 // -- Execution command: node Tokenizer-Moo.js ../dataset\'dataset general'\js_files\2.js
 
 const moo = require('moo');
-const fs = require('fs');
+const fs  = require('fs');
 
-// ── 1. Definition of Token rules ──────────────────────────────────────────────
+// Definition of Token rules
 const lexer = moo.compile({
-  WS:       { match: /[ \t]+/,    lineBreaks: false },
-  NL:       { match: /\n/,        lineBreaks: true  },
-  Comment:  /\/\/.*?$/,
-  Block_comment: /\/\*[\s\S]*?\*\//,
-  Number:    /[0-9]+(.[0-9]+)?/,Number: /[0-9]+(?:\.[0-9]+)?/,
-  Bigint:    /([0-9]+n)|(BigInt\([0-9]+\))/,
-  String:    /"(?:\\["\\]|[^\n"\\])*"/,
-  Boolean:   /true|false/,
-  Undefined: /let\ [a-zA-Z]+/,
-  Null:      /null/,
-  Symbol:    /Symbol\(("(?:\\["\\]|[^\n"\\])*")?\)/,
-  Object:    /{[a-zA-Z]+\_?:\ ?("(?:\\["\\]|[^\n"\\])*")(\ ?,\ ?[a-zA-Z]+\_?:\ ?("(?:\\["\\]|[^\n"\\])*"))*\}/,
-  Array:     /\[("(?:\\["\\]|[^\n"\\])*"|[0-9]+)|(\ ?,\ ?("(?:\\["\\]|[^\n"\\])*"|[0-9]))*\]/,
-  Data:      /new Date\(("[0-9]+-[0-9]+-[0-9]+")?\)/,
-  Lparen:    '(',
-  Rparen:    ')',
-  Lbrace:    '{',
-  Rbrace:    '}',
-  Semi:      ';',
-  Comma:     ',',
-  Assign:    '=',
-  Keyword: [
-  'while', 'for', 'of', 'in',
-  'if', 'else', 'switch', 'case', 'break', 'continue', 'default',
-  'return', 'throw', 'try', 'catch', 'finally',
-  'function', 'class', 'extends', 'new', 'this', 'super',
-  'const', 'let', 'var',
-  'import', 'export', 'from', 'default',
-  'typeof', 'instanceof', 'void', 'delete',
-  'true', 'false', 'null', 'undefined',
-  'async', 'await', 'yield',
-  'static', 'get', 'set',
-  ]
+  WS:            { match: /[ \t]+/,    lineBreaks: false },
+  NL:            { match: /\n/,        lineBreaks: true  },
+  Block_comment: { match: /\/\*[\s\S]*?\*\//, lineBreaks: true },
+  Comment:       { match: /\/\/[^\n]*/, lineBreaks: false },
+
+  // Punctuation
+  Lparen:   '(',
+  Rparen:   ')',
+  Lbrace:   '{',
+  Rbrace:   '}',
+  Lbracket: '[',
+  Rbracket: ']',
+  Semi:     ';',
+  Comma:    ',',
+  Colon:    ':',
+  Dot:      '.',
+  Assign:   '=',
+
+  // Operators
+  Op_unsign_rsh_assign: '>>>=',
+  Op_exp_assign:        '**=',
+  Op_lsh_assign:        '<<=',
+  Op_rsh_assign:        '>>=',
+  Op_and_assign:        '&&=',
+  Op_or_assign:         '||=',
+  Op_nullish_assign:    '??=',
+  Op_strict_eq:         '===',
+  Op_strict_neq:        '!==',
+  Op_unsign_rsh:        '>>>',
+  Op_exp:               '**',
+  Op_arrow:             '=>',
+  Op_spread:            '...',
+  Op_optional_chain:    '?.',
+  Op_nullish:           '??',
+  Op_lsh:               '<<',
+  Op_rsh:               '>>',
+  Op_logical_and:       '&&',
+  Op_logical_or:        '||',
+  Op_plus_assign:       '+=',
+  Op_minus_assign:      '-=',
+  Op_mul_assign:        '*=',
+  Op_div_assign:        '/=',
+  Op_mod_assign:        '%=',
+  Op_band_assign:       '&=',
+  Op_bor_assign:        '|=',
+  Op_xor_assign:        '^=',
+  Op_eq:                '==',
+  Op_neq:               '!=',
+  Op_lte:               '<=',
+  Op_gte:               '>=',
+  Op_incr:              '++',
+  Op_decr:              '--',
+  Op_plus:              '+',
+  Op_minus:             '-',
+  Op_mul:               '*',
+  Op_div:               '/',
+  Op_mod:               '%',
+  Op_band:              '&',
+  Op_bor:               '|',
+  Op_xor:               '^',
+  Op_bnot:              '~',
+  Op_not:               '!',
+  Op_lt:                '<',
+  Op_gt:                '>',
+  Op_ternary:           '?',
+
+  // Data types
+  Date:    /new Date\((?:"[0-9]+-[0-9]+-[0-9]+")??\)/,
+  Symbol:  /Symbol\((?:"(?:\\["\\]|[^\n"\\])*")?\)/,
+  Object:  /\{[a-zA-Z]+_?:\ ?"(?:\\["\\]|[^\n"\\])*"(?:,\ ?[a-zA-Z]+_?:\ ?"(?:\\["\\]|[^\n"\\])*")*\}/,
+  Array:   /\[(?:"(?:\\["\\]|[^\n"\\])*"|[0-9]+)(?:,\ ?(?:"(?:\\["\\]|[^\n"\\])*"|[0-9]+))*\]/,
+  Bigint:  /[0-9]+n/,
+  Number:  /[0-9]+(?:\.[0-9]+)?/,
+  String_double:   /"(?:\\["\\]|[^\n"\\])*"/,
+  String_single:   /'(?:\\['\\]|[^\n'\\])*'/,
+  String_template: { match: /`(?:\\[\s\S]|[^`\\])*`/, lineBreaks: true },
+
+  // Keywords and identifiers
+  Keyword: {
+    match: /[a-zA-Z_$][a-zA-Z0-9_$]*/,
+    type: moo.keywords({
+      Keyword: [
+        'while', 'for', 'of', 'in',
+        'if', 'else', 'switch', 'case', 'break', 'continue', 'default',
+        'return', 'throw', 'try', 'catch', 'finally',
+        'function', 'class', 'extends', 'new', 'this', 'super',
+        'const', 'let', 'var',
+        'import', 'export', 'from',
+        'typeof', 'instanceof', 'void', 'delete',
+        'true', 'false', 'null', 'undefined',
+        'async', 'await', 'yield',
+        'static', 'get', 'set',
+      ]
+    })
+  },
+  Ident: /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 });
 
-// ── 2. Read the file from the path given as a CLI argument ──────────────────
+// Read the file from the path given
 const filePath = process.argv[2];
 
 if (!filePath) {
-  console.error('Usage: node tokenize.js <path/to/your/file>');
+  console.error('Usage: node Tokenizer-Moo.js <path/to/your/file>');
   process.exit(1);
 }
 
 const source = fs.readFileSync(filePath, 'utf-8');
 
-// ── 3. Feed the source to Moo and print tokens ─────────────────────────────
+// Feed the source to Moo and write output
 lexer.reset(source);
 
-for (const token of lexer) {
-  // Skip whitespace/newlines unnnecesary in the output
-  if (token.type === 'WS' || token.type === 'NL') continue;
+const lines = [];
 
-  console.log(`[${token.type}] "${token.value}"  (line ${token.line})`);
+for (const token of lexer) {
+  if (token.type === 'WS' || token.type === 'NL') continue;
+  lines.push(`[${token.type}] "${token.value}"  (line ${token.line})`);
 }
+
+fs.writeFileSync('Moo.txt', lines.join('\n'), 'utf-8');
+console.log(`Done! ${lines.length} tokens written to Moo.txt`);
