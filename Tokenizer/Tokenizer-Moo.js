@@ -7,22 +7,10 @@ const fs  = require('fs');
 // Definition of Token rules
 const lexer = moo.compile({
   WS:            { match: /[ \t]+/,    lineBreaks: false },
-  NL:            { match: /\n/,        lineBreaks: true  },
+  NL:            { match: /\r?\n/, lineBreaks: true },
   Block_comment: { match: /\/\*[\s\S]*?\*\//, lineBreaks: true },
   Comment:       { match: /\/\/[^\n]*/, lineBreaks: false },
-
-  // Punctuation
-  Lparen:   '(',
-  Rparen:   ')',
-  Lbrace:   '{',
-  Rbrace:   '}',
-  Lbracket: '[',
-  Rbracket: ']',
-  Semi:     ';',
-  Comma:    ',',
-  Colon:    ':',
-  Dot:      '.',
-  Assign:   '=',
+  Regex: { match: /\/(?:[^\/\\\n]|\\.)+\/[gimsuy]*/, lineBreaks: false },
 
   // Operators
   Op_unsign_rsh_assign: '>>>=',
@@ -73,10 +61,6 @@ const lexer = moo.compile({
   Op_ternary:           '?',
 
   // Data types
-  Date:    /new Date\((?:"[0-9]+-[0-9]+-[0-9]+")??\)/,
-  Symbol:  /Symbol\((?:"(?:\\["\\]|[^\n"\\])*")?\)/,
-  Object:  /\{[a-zA-Z]+_?:\ ?"(?:\\["\\]|[^\n"\\])*"(?:,\ ?[a-zA-Z]+_?:\ ?"(?:\\["\\]|[^\n"\\])*")*\}/,
-  Array:   /\[(?:"(?:\\["\\]|[^\n"\\])*"|[0-9]+)(?:,\ ?(?:"(?:\\["\\]|[^\n"\\])*"|[0-9]+))*\]/,
   Bigint:  /[0-9]+n/,
   Number:  /[0-9]+(?:\.[0-9]+)?/,
   String_double:   /"(?:\\["\\]|[^\n"\\])*"/,
@@ -102,6 +86,19 @@ const lexer = moo.compile({
     })
   },
   Ident: /[a-zA-Z_$][a-zA-Z0-9_$]*/,
+
+  // Punctuation
+  Lparen:   '(',
+  Rparen:   ')',
+  Lbrace:   '{',
+  Rbrace:   '}',
+  Lbracket: '[',
+  Rbracket: ']',
+  Semi:     ';',
+  Comma:    ',',
+  Colon:    ':',
+  Dot:      '.',
+  Assign:   '=',
 });
 
 // Read the file from the path given
