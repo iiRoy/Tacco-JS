@@ -9,7 +9,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.preprocessing import StandardScaler
 
-
 # ─────────────────────────────────────────────
 #  Paths
 # ─────────────────────────────────────────────
@@ -63,7 +62,6 @@ def tokenize_with_js(filepath: Path) -> list:
         tokens.append(f"{token_type}:{token_value}")
     return tokens
 
-
 # ─────────────────────────────────────────────
 #  N-gram Helpers
 # ─────────────────────────────────────────────
@@ -73,13 +71,11 @@ def make_ngrams(tokens: list, n: int) -> set:
         return set()
     return set(zip(*[tokens[i:] for i in range(n)]))
 
-
 def make_ngram_counts(tokens: list, n: int) -> Counter:
     """Frequency count of n-grams (needed for vector-based metrics)."""
     if len(tokens) < n:
         return Counter()
     return Counter(zip(*[tokens[i:] for i in range(n)]))
-
 
 def file_ngram_data(tokens: list) -> dict:
     """
@@ -94,7 +90,6 @@ def file_ngram_data(tokens: list) -> dict:
         for n in NGRAM_SIZES
     }
 
-
 # ─────────────────────────────────────────────
 #  Similarity Metrics
 # ─────────────────────────────────────────────
@@ -106,7 +101,6 @@ def jaccard(a: set, b: set) -> float:
     union = len(a | b)
     return len(a & b) / union if union else 0.0
 
-
 def dice(a: set, b: set) -> float:
     """
     Dice coefficient: 2|A∩B| / (|A|+|B|).
@@ -117,7 +111,6 @@ def dice(a: set, b: set) -> float:
     denom = len(a) + len(b)
     return (2 * len(a & b)) / denom if denom else 0.0
 
-
 def _aligned_vectors(ca: Counter, cb: Counter):
     """
     Build two aligned frequency arrays over the union vocabulary.
@@ -127,7 +120,6 @@ def _aligned_vectors(ca: Counter, cb: Counter):
     va = np.array([ca.get(k, 0) for k in vocab], dtype=float)
     vb = np.array([cb.get(k, 0) for k in vocab], dtype=float)
     return va, vb
-
 
 def gauss_kernel(ca: Counter, cb: Counter, sigma: float = GAUSS_SIGMA) -> float:
     """
@@ -142,7 +134,6 @@ def gauss_kernel(ca: Counter, cb: Counter, sigma: float = GAUSS_SIGMA) -> float:
     sq_dist = float(np.sum((va - vb) ** 2))
     return float(np.exp(-sq_dist / (2 * sigma ** 2)))
 
-
 def minkowski_sim(ca: Counter, cb: Counter, p: int = MINKOWSKI_P) -> float:
     """
     Minkowski similarity: 1 / (1 + minkowski_distance(va, vb)).
@@ -155,7 +146,6 @@ def minkowski_sim(ca: Counter, cb: Counter, p: int = MINKOWSKI_P) -> float:
     va, vb = _aligned_vectors(ca, cb)
     dist = float(np.sum(np.abs(va - vb) ** p) ** (1.0 / p))
     return 1.0 / (1.0 + dist)
-
 
 # ─────────────────────────────────────────────
 #  Feature Extraction  (4 metrics × 3 n-gram sizes = 12 features)
@@ -179,11 +169,9 @@ def pair_features(data_a: dict, data_b: dict) -> list:
         feats.append(minkowski_sim(ca, cb))
     return feats
 
-
 def avg_jaccard_only(feats: list) -> float:
     """Extract just the Jaccard scores (indices 0,4,8) and average them."""
     return float(np.mean([feats[n * 4] for n in range(len(NGRAM_SIZES))]))
-
 
 # ─────────────────────────────────────────────
 #  File Loading
@@ -201,7 +189,6 @@ def load_js_files(folder: Path, label: str) -> dict:
         else:
             print(f"  [EMPTY/SKIP]    {fpath.name}  (0 tokens returned)")
     return files
-
 
 # ─────────────────────────────────────────────
 #  Smart Pairing
@@ -238,7 +225,6 @@ def build_dataset(base_files: dict, clone_files: dict):
     print(f"  Pairs skipped : {skipped}  (missing clone files)")
     return np.array(X), np.array(y), pair_meta
 
-
 # ─────────────────────────────────────────────
 #  Output Helpers
 # ─────────────────────────────────────────────
@@ -268,7 +254,6 @@ def _verdict_line(base, clone, ctype, feats, pred, truth=None):
 
     return row
 
-
 def _print_header(with_truth=False):
     base_hdr = (f"  {'Base':<25} {'Clone':<32} {'CloneType':<9} "
                 f"{'Jaccard':>9} {'Dice':>7} {'Gauss':>7} {'Minkowski':>10}  "
@@ -277,7 +262,6 @@ def _print_header(with_truth=False):
         base_hdr += "  Truth"
     print(base_hdr)
     print("  " + "-" * (len(base_hdr) + 5))
-
 
 # ─────────────────────────────────────────────
 #  Training & Evaluation
@@ -407,13 +391,11 @@ def train_and_evaluate(
             print(_verdict_line(base, clone, ctype, X_unseen[i],
                                 unseen_pred[i], truth=y_unseen[i]))
 
-
 def _print_all_pairs(X, y, pair_meta):
     """Fallback when only one label class exists."""
     _print_header(with_truth=True)
     for i, (base, clone, ctype) in enumerate(pair_meta):
         print(_verdict_line(base, clone, ctype, X[i], int(y[i]), truth=int(y[i])))
-
 
 # ─────────────────────────────────────────────
 #  Entry Point
