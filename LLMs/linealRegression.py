@@ -280,6 +280,10 @@ def train_and_evaluate(
         print("\n[WARNING] Only one class present — cannot train.")
         return
 
+    if min(Counter(y).values()) < 2:
+        print("\n[WARNING] Not enough samples per class to split — need at least 2 per class. Increase --train-ratio or lower --threshold.")
+        return
+
     # ── Split ──────────────────────────────────────────────────
     indices = list(range(len(y)))
     X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(

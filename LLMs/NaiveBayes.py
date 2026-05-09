@@ -309,6 +309,11 @@ def train_and_evaluate(
         _print_all_pairs(X, y, pair_meta)
         return
 
+    if min(Counter(y).values()) < 2:
+        print("\n[WARNING] Not enough samples per class to split — need at least 2 per class. Increase --train-ratio or lower --threshold.")
+        _print_all_pairs(X, y, pair_meta)
+        return
+
     # ── Split ──────────────────────────────────────────────────
     indices = list(range(len(y)))
     X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
