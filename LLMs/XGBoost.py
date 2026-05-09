@@ -1,3 +1,4 @@
+import sys
 import json
 import random
 import subprocess
@@ -67,7 +68,9 @@ def build_dataset(base_stems: list, clones_dir: Path) -> tuple:
     all_clone_stems = [p.stem for p in sorted(clones_dir.glob("*.js"))]
     matched = skipped = negatives = 0
 
-    for base_stem in base_stems:
+    total = len(base_stems)
+    for idx, base_stem in enumerate(base_stems, 1):
+        print(f"  [{idx}/{total}] {base_stem}.js", flush=True)
         file_b = BASE_DIR / f"{base_stem}.js"
 
         # ── Positive pairs: true clones ──────────────────────────
@@ -181,6 +184,12 @@ def train_and_evaluate(
         _print_all_pairs(X, y, pair_meta)
         return
 
+    n_test = max(1, round(len(y) * TEST_SIZE))
+    if n_test < len(set(y)):
+        print(f"\n[WARNING] Test set too small ({n_test} sample(s)) for {len(set(y))} classes — increase --train-ratio.")
+        _print_all_pairs(X, y, pair_meta)
+        return
+
     # ── Split ──────────────────────────────────────────────────
     indices = list(range(len(y)))
     X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
@@ -223,9 +232,10 @@ def train_and_evaluate(
     print("=" * 65)
     print(f"  Accuracy : {accuracy_score(y_test, y_pred):.4f}\n")
     print(classification_report(y_test, y_pred,
-                                 target_names=["Clean (0)", "Plagiarized (1)"]))
+                                 target_names=["Clean (0)", "Plagiarized (1)"],
+                                 labels=[0, 1], zero_division=0))
 
-    cm = confusion_matrix(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
     print("  Confusion Matrix:")
     print(f"               Pred Clean  Pred Plagiarized")
     print(f"  True Clean         {cm[0,0]:>5}            {cm[0,1]:>5}")
@@ -269,7 +279,8 @@ def train_and_evaluate(
         if len(set(y_unseen)) >= 2:
             print(f"  Accuracy on unseen : {accuracy_score(y_unseen, unseen_pred):.4f}\n")
             print(classification_report(y_unseen, unseen_pred,
-                                         target_names=["Clean (0)", "Plagiarized (1)"]))
+                                         target_names=["Clean (0)", "Plagiarized (1)"],
+                                         labels=[0, 1], zero_division=0))
         else:
             print("  (Only one class in unseen labels — skipping metrics)\n")
 
@@ -288,6 +299,16 @@ def _print_all_pairs(X, y, pair_meta):
 #  Entry Point
 # ─────────────────────────────────────────────
 
+class _Tee:
+    def __init__(self, *streams):
+        self._streams = streams
+    def write(self, data):
+        for s in self._streams:
+            s.write(data)
+    def flush(self):
+        for s in self._streams:
+            s.flush()
+
 def main():
     global PLAGIARISM_THRESHOLD
 
@@ -301,6 +322,20 @@ def main():
     args = parser.parse_args()
     PLAGIARISM_THRESHOLD = args.threshold
 
+    log_dir = Path("LLMs/logs")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "XGBoost.log"
+    _log_file = open(log_path, "w", encoding="utf-8")
+    _orig_stdout = sys.stdout
+    sys.stdout = _Tee(_orig_stdout, _log_file)
+    try:
+        _main_body()
+    finally:
+        sys.stdout = _orig_stdout
+        _log_file.close()
+    _orig_stdout.write(f"\n[LOG] {log_path}\n")
+
+def _main_body():
     if not COMPARE_JS.exists():
         print(f"\n[ERROR] compare.js not found: {COMPARE_JS}")
         return
