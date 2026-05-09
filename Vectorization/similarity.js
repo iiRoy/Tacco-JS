@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { tokenizeFile } from "../Tokenizer/Tokenizer-Tokenizr.js";
 
 /*
@@ -792,7 +793,9 @@ function main() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}
 
 export {
   compareTwoFiles,
