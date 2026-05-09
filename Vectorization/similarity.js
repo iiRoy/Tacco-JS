@@ -15,7 +15,7 @@ import { tokenizeFile } from "../Tokenizer/Tokenizer-Tokenizr.js";
   /home/rodrigo/Documentos/Github/Tacco-JS/dataset/dataset general
 */
 
-const DATASET_ROOT = "/home/rodrigo/Documentos/Github/Tacco-JS/dataset/dataset general";
+const DATASET_ROOT = "./dataset/dataset general";
 
 /*
   BASE_CODE_ID:
@@ -54,6 +54,7 @@ const CLONE_TYPES = [1, 2, 3, 4];
 */
 
 const MODE = "type";
+const VECTORIZE_MODE = 1;
 
 /*
   Parametros de modelos.
@@ -744,14 +745,45 @@ function compareBaseCodeWithCloneGroup(baseCodeId, cloneCodeId, options = {}) {
 
 /*
   ============================================================
+  VECTORIZACION DE UN PAR (O, CA)
+  ============================================================
+*/
+
+const MODE_MAP = { 1: "type", 2: "value", 3: "type-value" };
+
+function vectorize(O, CA, T, options = {}) {
+  const mode = MODE_MAP[T];
+
+  if (!mode) {
+    throw new Error(`Modo invalido: ${T}. Usa 1 (type), 2 (value) o 3 (type-value).`);
+  }
+
+  const opts = { ...options, mode };
+
+  const ownGroup     = compareBaseCodeWithCloneGroup(O, O,  opts);
+  const foreignGroup = compareBaseCodeWithCloneGroup(O, CA, opts);
+
+  const ownClones     = ownGroup.results.map((r)     => ({ ...r, isClone: true  }));
+  const foreignClones = foreignGroup.results.map((r) => ({ ...r, isClone: false }));
+
+  return {
+    O,
+    CA,
+    mode,
+    datasetRoot: ownGroup.datasetRoot,
+    results: [...ownClones, ...foreignClones],
+  };
+}
+
+/*
+  ============================================================
   EJECUCION
   ============================================================
 */
 
 function main() {
-  const result = compareBaseCodeWithCloneGroup(BASE_CODE_ID, CLONE_CODE_ID, {
+  const result = vectorize(1000, 1001, VECTORIZE_MODE, {
     datasetRoot: DATASET_ROOT,
-    mode: MODE,
     ngramSize: NGRAM_SIZE,
     minkowskiP: MINKOWSKI_P,
     sigma: SIGMA,
@@ -765,6 +797,7 @@ main();
 export {
   compareTwoFiles,
   compareBaseCodeWithCloneGroup,
+  vectorize,
 
   jaccardSimilarity,
   diceSimilarity,
