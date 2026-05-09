@@ -13,8 +13,8 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 # ─────────────────────────────────────────────
 
 TOKENIZER_JS = Path("Tokenizer/Tokenizer-Tokenizr.js")
-BASE_DIR      = Path("dataset/dataset general/js_files")
-CLONES_DIR    = Path("dataset/dataset general/clones")
+BASE_DIR      = Path("dataset_copy/dataset general/js_files")
+CLONES_DIR    = Path("dataset_copy/dataset general/clones")
 
 CLONE_TYPES          = [1, 2, 3]
 NGRAM_SIZES          = [1, 2, 3]
