@@ -1,3 +1,4 @@
+import sys
 import json
 import random
 import subprocess
@@ -15,8 +16,8 @@ from sklearn.preprocessing import StandardScaler
 # ─────────────────────────────────────────────
 
 COMPARE_JS = Path("Vectorization/compare.js")
-BASE_DIR   = Path("dataset/dataset general/js_files")
-CLONES_DIR = Path("dataset/dataset general/clones")
+BASE_DIR   = Path("dataset_copy/dataset general/js_files")
+CLONES_DIR = Path("dataset_copy/dataset general/clones")
 
 CLONE_TYPES        = [1, 2, 3]
 COMPARE_MODE       = 1  # 1=type, 2=value, 3=type-value
@@ -74,7 +75,9 @@ def build_dataset(base_stems: list, clones_dir: Path) -> tuple:
     all_clone_stems = [p.stem for p in sorted(clones_dir.glob("*.js"))]
     matched = skipped = negatives = 0
 
-    for base_stem in base_stems:
+    total = len(base_stems)
+    for idx, base_stem in enumerate(base_stems, 1):
+        print(f"  [{idx}/{total}] {base_stem}.js", flush=True)
         file_b = BASE_DIR / f"{base_stem}.js"
 
         # ── Positive pairs: true clones, label = clone type ──────
@@ -205,7 +208,8 @@ def evaluate_classifier(
     print(f"  EVALUATION  ({name} — internal test set)")
     print("=" * 65)
     print(f"  Accuracy : {accuracy_score(y_test, y_pred):.4f}\n")
-    print(classification_report(y_test, y_pred, target_names=CLASS_NAMES))
+    print(classification_report(y_test, y_pred, target_names=CLASS_NAMES,
+                                labels=[0, 1, 2, 3], zero_division=0))
 
     cm = confusion_matrix(y_test, y_pred, labels=[0, 1, 2, 3])
     print("  Confusion Matrix (rows=truth, cols=predicted):")
@@ -242,7 +246,8 @@ def evaluate_classifier(
         if len(set(y_unseen)) >= 2:
             print(f"  Accuracy on unseen : {accuracy_score(y_unseen, unseen_pred):.4f}\n")
             print(classification_report(y_unseen, unseen_pred,
-                                        target_names=CLASS_NAMES))
+                                        target_names=CLASS_NAMES,
+                                        labels=[0, 1, 2, 3], zero_division=0))
         else:
             print("  (Only one class in unseen set — skipping metrics)\n")
 
@@ -312,12 +317,36 @@ def train_and_evaluate(
 #  Entry Point
 # ─────────────────────────────────────────────
 
+class _Tee:
+    def __init__(self, *streams):
+        self._streams = streams
+    def write(self, data):
+        for s in self._streams:
+            s.write(data)
+    def flush(self):
+        for s in self._streams:
+            s.flush()
+
 def main():
     parser = argparse.ArgumentParser(
         description="Plagiarism detector — 16 JS metrics + Logistic Regression."
     )
     args = parser.parse_args()
 
+    log_dir = Path("LLMs/logs")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "logicalRegression.log"
+    _log_file = open(log_path, "w", encoding="utf-8")
+    _orig_stdout = sys.stdout
+    sys.stdout = _Tee(_orig_stdout, _log_file)
+    try:
+        _main_body()
+    finally:
+        sys.stdout = _orig_stdout
+        _log_file.close()
+    _orig_stdout.write(f"\n[LOG] {log_path}\n")
+
+def _main_body():
     if not COMPARE_JS.exists():
         print(f"\n[ERROR] compare.js not found: {COMPARE_JS}")
         return
