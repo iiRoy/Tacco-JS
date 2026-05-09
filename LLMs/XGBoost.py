@@ -13,8 +13,8 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 # ─────────────────────────────────────────────
 
 TOKENIZER_JS = Path("Tokenizer/Tokenizer-Tokenizr.js")
-BASE_DIR      = Path("dataset/dataset general/js_files")
-CLONES_DIR    = Path("dataset/dataset general/clones")
+BASE_DIR      = Path("dataset_copy/dataset general/js_files")
+CLONES_DIR    = Path("dataset_copy/dataset general/clones")
 
 CLONE_TYPES          = [1, 2, 3]
 NGRAM_SIZES          = [1, 2, 3]
@@ -305,6 +305,11 @@ def train_and_evaluate(
 
     if len(set(y)) < 2:
         print("\n[WARNING] Only one class in labels — adjust --threshold.")
+        _print_all_pairs(X, y, pair_meta)
+        return
+
+    if min(Counter(y).values()) < 2:
+        print("\n[WARNING] Not enough samples per class to split — need at least 2 per class. Increase --train-ratio or lower --threshold.")
         _print_all_pairs(X, y, pair_meta)
         return
 
