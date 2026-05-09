@@ -1,4 +1,5 @@
 import re
+import random
 import subprocess
 import argparse
 import numpy as np
@@ -21,13 +22,13 @@ CLONE_TYPES          = [1, 2, 3]
 NGRAM_SIZES          = [1, 2, 3]
 PLAGIARISM_THRESHOLD = 0.5
 TRAIN_FILE_RATIO     = 0.10
-TEST_SIZE            = 0.15
+TEST_SIZE            = 0.10
 RANDOM_STATE         = 42
-
-# Minkowski distance order (p=1 → Manhattan, p=2 → Euclidean)
 MINKOWSKI_P = 2
-# Gauss kernel bandwidth (sigma); controls how fast similarity decays with distance
 GAUSS_SIGMA = 1.0
+
+# Ratio of negative (non-clone) pairs to generate per base file. Balances against full clone files
+NEGATIVES_PER_BASE = 3
 
 # ─────────────────────────────────────────────
 #  JS Tokenizer
@@ -61,7 +62,6 @@ def tokenize_with_js(filepath: Path) -> list:
             continue
         tokens.append(f"{token_type}:{token_value}")
     return tokens
-
 
 # ─────────────────────────────────────────────
 #  N-gram Helpers
@@ -99,40 +99,24 @@ def file_ngram_data(tokens: list) -> dict:
 # ─────────────────────────────────────────────
 
 def jaccard(a: set, b: set) -> float:
-    """Intersection over union of two n-gram sets."""
     if not a and not b:
         return 1.0
     union = len(a | b)
     return len(a & b) / union if union else 0.0
 
-
 def dice(a: set, b: set) -> float:
-    """
-    Dice coefficient: 2|A∩B| / (|A|+|B|).
-    Similar to Jaccard but weights shared elements more heavily.
-    """
     if not a and not b:
         return 1.0
     denom = len(a) + len(b)
     return (2 * len(a & b)) / denom if denom else 0.0
 
-
 def _aligned_vectors(ca: Counter, cb: Counter):
-    """
-    Build two aligned frequency arrays over the union vocabulary.
-    Required for vector-space metrics (Gauss, Minkowski).
-    """
     vocab = list(ca.keys() | cb.keys())
     va = np.array([ca.get(k, 0) for k in vocab], dtype=float)
     vb = np.array([cb.get(k, 0) for k in vocab], dtype=float)
     return va, vb
 
-
 def gauss_kernel(ca: Counter, cb: Counter, sigma: float = GAUSS_SIGMA) -> float:
-    """
-    Gaussian (RBF) kernel: exp(-||va - vb||² / (2σ²)).
-    Returns 1.0 when vectors are identical, approaches 0 as they diverge.
-    """
     if not ca and not cb:
         return 1.0
     if not ca or not cb:
@@ -141,12 +125,7 @@ def gauss_kernel(ca: Counter, cb: Counter, sigma: float = GAUSS_SIGMA) -> float:
     sq_dist = float(np.sum((va - vb) ** 2))
     return float(np.exp(-sq_dist / (2 * sigma ** 2)))
 
-
 def minkowski_sim(ca: Counter, cb: Counter, p: int = MINKOWSKI_P) -> float:
-    """
-    Minkowski similarity: 1 / (1 + minkowski_distance(va, vb)).
-    Distance of 0 → similarity 1.0; grows large → similarity approaches 0.
-    """
     if not ca and not cb:
         return 1.0
     if not ca or not cb:
@@ -155,7 +134,6 @@ def minkowski_sim(ca: Counter, cb: Counter, p: int = MINKOWSKI_P) -> float:
     dist = float(np.sum(np.abs(va - vb) ** p) ** (1.0 / p))
     return 1.0 / (1.0 + dist)
 
-
 # ─────────────────────────────────────────────
 #  Feature Extraction  (4 metrics × 3 n-gram sizes = 12 features)
 # ─────────────────────────────────────────────
@@ -163,11 +141,6 @@ def minkowski_sim(ca: Counter, cb: Counter, p: int = MINKOWSKI_P) -> float:
 METRIC_NAMES = ["Jaccard", "Dice", "Gauss", "Minkowski"]
 
 def pair_features(data_a: dict, data_b: dict) -> list:
-    """
-    For every n-gram size, compute all 4 similarity scores.
-    Returns a flat list of 12 floats.
-    Feature order: [J1, D1, G1, M1, J2, D2, G2, M2, J3, D3, G3, M3]
-    """
     feats = []
     for n in NGRAM_SIZES:
         sa, sb   = data_a[n]["set"],    data_b[n]["set"]
@@ -178,11 +151,9 @@ def pair_features(data_a: dict, data_b: dict) -> list:
         feats.append(minkowski_sim(ca, cb))
     return feats
 
-
 def avg_jaccard_only(feats: list) -> float:
     """Extract just the Jaccard scores (indices 0,4,8) and average them."""
     return float(np.mean([feats[n * 4] for n in range(len(NGRAM_SIZES))]))
-
 
 # ─────────────────────────────────────────────
 #  File Loading
@@ -207,12 +178,20 @@ def load_js_files(folder: Path, label: str) -> dict:
 # ─────────────────────────────────────────────
 
 def build_dataset(base_files: dict, clone_files: dict):
+    """
+    Builds a MULTICLASS dataset with labels:
+        0 → not plagiarized  (base file vs an unrelated clone)
+        1 → Type 1 clone
+        2 → Type 2 clone
+        3 → Type 3 clone
+    """
     X, y, pair_meta = [], [], []
 
     ng_base   = {name: file_ngram_data(toks) for name, toks in base_files.items()}
     ng_clones = {name: file_ngram_data(toks) for name, toks in clone_files.items()}
 
-    matched, skipped = 0, 0
+    all_clone_stems = list(clone_files.keys())
+    matched = skipped = negatives = 0
 
     for base_stem, data_b in ng_base.items():
         for ctype in CLONE_TYPES:
@@ -232,9 +211,25 @@ def build_dataset(base_files: dict, clone_files: dict):
             y.append(label)
             pair_meta.append((base_stem, clone_stem, ctype))
             matched += 1
+        
+        # ── Negative pairs: base file vs unrelated clones ──────────
+        # Collect clones that do NOT belong to this base file
+        unrelated = [
+            s for s in all_clone_stems
+            if not s.startswith(f"{base_stem}_clon_")
+        ]
+        random.seed(RANDOM_STATE + hash(base_stem) % 10000)
+        sampled = random.sample(unrelated, min(NEGATIVES_PER_BASE, len(unrelated)))
+        for neg_clone in sampled:
+            feats = pair_features(data_b, ng_clones[neg_clone])
+            X.append(feats)
+            y.append(0)                                          # 0 = not a clone
+            pair_meta.append((base_stem, neg_clone, 0, "negative"))
+            negatives += 1
 
-    print(f"\n  Pairs matched : {matched}")
-    print(f"  Pairs skipped : {skipped}  (missing clone files)")
+    print(f"\n  Positive pairs (true clones) : {matched}")
+    print(f"  Negative pairs (non-clones)  : {negatives}")
+    print(f"  Skipped (missing files)      : {skipped}")
     return np.array(X), np.array(y), pair_meta
 
 
@@ -242,12 +237,9 @@ def build_dataset(base_files: dict, clone_files: dict):
 #  Output Helpers
 # ─────────────────────────────────────────────
 
+CLASS_NAMES = ["Clean (0)", "Type 1 (1)", "Type 2 (2)", "Type 3 (3)"]
+
 def _verdict_line(base, clone, ctype, feats, pred, truth=None):
-    """
-    Format one result row.
-    Shows: base | clone | clone type | all 4 avg metrics | verdict | [truth + flag]
-    """
-    # Per-metric averages across n-gram sizes
     j_avg = float(np.mean([feats[n * 4 + 0] for n in range(len(NGRAM_SIZES))]))
     d_avg = float(np.mean([feats[n * 4 + 1] for n in range(len(NGRAM_SIZES))]))
     g_avg = float(np.mean([feats[n * 4 + 2] for n in range(len(NGRAM_SIZES))]))
@@ -267,7 +259,6 @@ def _verdict_line(base, clone, ctype, feats, pred, truth=None):
 
     return row
 
-
 def _print_header(with_truth=False):
     base_hdr = (f"  {'Base':<25} {'Clone':<32} {'CloneType':<9} "
                 f"{'Jaccard':>9} {'Dice':>7} {'Gauss':>7} {'Minkowski':>10}  "
@@ -276,7 +267,6 @@ def _print_header(with_truth=False):
         base_hdr += "  Truth"
     print(base_hdr)
     print("  " + "-" * (len(base_hdr) + 5))
-
 
 # ─────────────────────────────────────────────
 #  Training & Evaluation
@@ -300,7 +290,7 @@ def train_and_evaluate(
 
     print("\n  Pairs by clone type:")
     for ctype in CLONE_TYPES:
-        idx = [i for i, (_, _, t) in enumerate(pair_meta) if t == ctype]
+        idx = [i for i, entry in enumerate(pair_meta) if entry[2] == ctype]
         plag = int(y[idx].sum()) if idx else 0
         print(f"    Type {ctype}: {len(idx)} pairs  ({plag} labeled plagiarized)")
 
@@ -311,11 +301,10 @@ def train_and_evaluate(
 
     # ── Split ──────────────────────────────────────────────────
     indices = list(range(len(y)))
-    X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
+    X_train, X_test, y_train, y_test, idx_train,idx_test = train_test_split(
         X, y, indices,
         test_size=TEST_SIZE,
-        random_state=RANDOM_STATE,
-        stratify=y,
+        random_state=RANDOM_STATE
     )
 
     # ── Scale ──────────────────────────────────────────────────
@@ -337,7 +326,6 @@ def train_and_evaluate(
 
     # ── Eval metrics ───────────────────────────────────────────
     y_pred = clf.predict(X_test_sc)
-    y_prob = clf.predict_proba(X_test_sc)[:, 1]
 
     print("\n" + "=" * 65)
     print("  EVALUATION  (internal test set)")
@@ -367,7 +355,7 @@ def train_and_evaluate(
     print("=" * 65)
     _print_header(with_truth=True)
     for i, idx in enumerate(idx_test):
-        base, clone, ctype = pair_meta[idx]
+        base, clone, ctype = pair_meta[idx][0], pair_meta[idx][1], pair_meta[idx][2]
         print(_verdict_line(base, clone, ctype, X[idx], y_pred[i], truth=y_test[i]))
 
     # ── Full training pool table ───────────────────────────────
@@ -376,7 +364,9 @@ def train_and_evaluate(
     print("=" * 65)
     all_pred = clf.predict(scaler.transform(X))
     _print_header(with_truth=False)
-    for i, (base, clone, ctype) in enumerate(pair_meta):
+
+    for i, entry in enumerate(pair_meta):
+        base, clone, ctype = entry[0], entry[1], entry[2]
         print(_verdict_line(base, clone, ctype, X[i], all_pred[i]))
 
     # ── Unseen pool predictions ────────────────────────────────
@@ -395,16 +385,17 @@ def train_and_evaluate(
             print("  (Only one class in unseen labels — skipping metrics)\n")
 
         _print_header(with_truth=True)
-        for i, (base, clone, ctype) in enumerate(meta_unseen):
-            print(_verdict_line(base, clone, ctype, X_unseen[i],
-                                unseen_pred[i], truth=y_unseen[i]))
+
+        for i, entry in enumerate(meta_unseen):
+            base, clone, ctype = entry[0], entry[1], entry[2]
+            print(_verdict_line(base, clone, ctype, X_unseen[i], unseen_pred[i], truth=y_unseen[i]))
 
 def _print_all_pairs(X, y, pair_meta):
     """Fallback when only one label class exists."""
     _print_header(with_truth=True)
-    for i, (base, clone, ctype) in enumerate(pair_meta):
+    for i, entry in enumerate(pair_meta):
+        base, clone, ctype = entry[0], entry[1], entry[2]
         print(_verdict_line(base, clone, ctype, X[i], int(y[i]), truth=int(y[i])))
-
 
 # ─────────────────────────────────────────────
 #  Entry Point

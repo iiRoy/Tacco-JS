@@ -15,13 +15,13 @@ from sklearn.preprocessing import StandardScaler
 # ─────────────────────────────────────────────
 
 TOKENIZER_JS = Path("Tokenizer/Tokenizer-Tokenizr.js")
-BASE_DIR      = Path("dataset_copy/dataset general/js_files")
-CLONES_DIR    = Path("dataset_copy/dataset general/clones")
+BASE_DIR      = Path("dataset/dataset general/js_files")
+CLONES_DIR    = Path("dataset/dataset general/clones")
 
 CLONE_TYPES        = [1, 2, 3]
 NGRAM_SIZES        = [1, 2, 3]
-TRAIN_FILE_RATIO   = 0.50
-TEST_SIZE          = 0.50
+TRAIN_FILE_RATIO   = 0.10
+TEST_SIZE          = 0.10
 RANDOM_STATE       = 42
 MINKOWSKI_P        = 2
 GAUSS_SIGMA        = 1.0
@@ -122,7 +122,6 @@ def minkowski_sim(ca: Counter, cb: Counter, p: int = MINKOWSKI_P) -> float:
     va, vb = _aligned_vectors(ca, cb)
     dist = float(np.sum(np.abs(va - vb) ** p) ** (1.0 / p))
     return 1.0 / (1.0 + dist)
-
 
 # ─────────────────────────────────────────────
 #  Feature Extraction  (4 metrics × 3 n-gram sizes = 12 features)
@@ -405,7 +404,6 @@ def train_and_evaluate(
         X_train_sc, X_test_sc, y_train, y_test, idx_test,
         X, y, pair_meta, X_unseen, y_unseen, meta_unseen,
     )
-
 
 # ─────────────────────────────────────────────
 #  Entry Point
