@@ -1,4 +1,3 @@
-import re
 import json
 import random
 import subprocess
@@ -104,16 +103,6 @@ def discover_js_files(folder: Path, label: str) -> dict:
 # ─────────────────────────────────────────────
  
 def build_dataset(base_files: dict, clone_files: dict) -> tuple:
-    """
-    Builds a 4-class dataset by calling compare.js for each pair.
- 
-    Labels come from filename ground truth only — no threshold bias:
-        Positive pairs  →  label = clone type (1, 2, or 3)
-        Negative pairs  →  label = 0  (genuinely unrelated files)
- 
-    pair_meta entries are always 4-tuples:
-        (base_stem, clone_stem, ctype, pair_kind)
-    """
     X, y, pair_meta = [], [], []
     all_clone_stems = list(clone_files.keys())
     matched = skipped = negatives = 0
