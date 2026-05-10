@@ -1,283 +1,211 @@
-import re
+import json
+import random
 import subprocess
 import argparse
 import numpy as np
 from pathlib import Path
-from collections import Counter
 from sklearn.tree import DecisionTreeClassifier, export_text
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
+
 # ─────────────────────────────────────────────
 #  Paths
 # ─────────────────────────────────────────────
 
-TOKENIZER_JS = Path("Tokenizer/Tokenizer-Tokenizr.js")
-BASE_DIR      = Path("dataset/dataset general/js_files")
-CLONES_DIR    = Path("dataset/dataset general/clones")
+COMPARE_JS = Path("Vectorization/compare.js")
+BASE_DIR   = Path("dataset_copy/dataset general/js_files")
+CLONES_DIR = Path("dataset_copy/dataset general/clones")
 
-CLONE_TYPES          = [1, 2, 3]
-NGRAM_SIZES          = [1, 2, 3]
-PLAGIARISM_THRESHOLD = 0.5
-TRAIN_FILE_RATIO     = 0.10
-TEST_SIZE            = 0.15
-RANDOM_STATE         = 42
-
-# Minkowski distance order (p=1 → Manhattan, p=2 → Euclidean)
-MINKOWSKI_P = 2
-# Gauss kernel bandwidth (sigma); controls how fast similarity decays with distance
-GAUSS_SIGMA = 1.0
+CLONE_TYPES        = [1, 2, 3]
+COMPARE_MODE       = 1          # 1=type, 2=value, 3=type-value
+TRAIN_FILE_RATIO   = 0.10
+TEST_SIZE          = 0.15
+RANDOM_STATE       = 42
+NEGATIVES_PER_BASE = 3          # unrelated pairs per base file (label 0)
 
 # Decision Tree hyperparameters
-DT_CRITERION   = "gini"   # 'gini' | 'entropy' | 'log_loss'
-DT_MAX_DEPTH   = None     # None = grow until pure leaves; int to cap depth (prevents overfitting)
-DT_MIN_SAMPLES_SPLIT = 2  # Minimum samples required to split an internal node
-DT_MIN_SAMPLES_LEAF  = 1  # Minimum samples required at a leaf node
-DT_MAX_FEATURES      = None  # None = all features; 'sqrt' | 'log2' | int | float
-DT_CLASS_WEIGHT      = None  # None | 'balanced' — useful when classes are imbalanced
+DT_CRITERION          = "gini"   # 'gini' | 'entropy' | 'log_loss'
+DT_MAX_DEPTH          = None     # None = unlimited
+DT_MIN_SAMPLES_SPLIT  = 2        # Min samples to split
+DT_MIN_SAMPLES_LEAF   = 1        # Min samples at leaf
+DT_MAX_FEATURES       = None     # None = all features
+DT_CLASS_WEIGHT       = None     # None | 'balanced'
+
 
 # ─────────────────────────────────────────────
-#  JS Tokenizer
+#  JS Feature Extraction
 # ─────────────────────────────────────────────
 
-_TOKEN_LINE = re.compile(r'^\[(\w+)\]\s+"(.*)"', re.MULTILINE)
+METRIC_NAMES = [
+    "Jaccard", "Dice", "LevenshteinRatio", "Jaro", "JaroWinkler",
+    "Cosine", "Overlap", "LCSRatio", "NgramJaccard", "NgramDice",
+    "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
+    "LengthRatio", "VocabularyRatio",
+]
 
-def tokenize_with_js(filepath: Path) -> list:
-    if not TOKENIZER_JS.exists():
-        raise FileNotFoundError(f"Tokenizer not found: {TOKENIZER_JS}")
+def compare_with_js(file_a: Path, file_b: Path) -> list:
+    """Call compare.js and return a list of 16 floats, or [] on error."""
+    if not COMPARE_JS.exists():
+        raise FileNotFoundError(f"compare.js not found: {COMPARE_JS}")
     try:
         result = subprocess.run(
-            ["node", str(TOKENIZER_JS), str(filepath)],
-            capture_output=True, text=True, encoding="utf-8", errors="ignore", timeout=30,
+            ["node", str(COMPARE_JS), str(file_a), str(file_b), str(COMPARE_MODE)],
+            capture_output=True, text=True,
+            encoding="utf-8", errors="ignore", timeout=30,
         )
     except FileNotFoundError:
         raise RuntimeError("Node.js is not installed or not on PATH.")
     except subprocess.TimeoutExpired:
-        print(f"  [TIMEOUT] {filepath.name} — skipping")
+        print(f"  [TIMEOUT] {file_a.name} vs {file_b.name} — skipping")
         return []
 
     if result.returncode != 0:
-        print(f"  [JS ERROR] {filepath.name}: {result.stderr.strip()[:120]}")
+        print(f"  [JS ERROR] {file_a.name} vs {file_b.name}: "
+              f"{result.stderr.strip()[:120]}")
         return []
 
-    tokens = []
-    for match in _TOKEN_LINE.finditer(result.stdout):
-        token_type  = match.group(1)
-        token_value = match.group(2)
-        if token_type == "EOF":
-            continue
-        tokens.append(f"{token_type}:{token_value}")
-    return tokens
+    try:
+        feats = json.loads(result.stdout.strip())
+        if len(feats) != len(METRIC_NAMES):
+            print(f"  [WARN] Expected {len(METRIC_NAMES)} features, "
+                  f"got {len(feats)} for {file_a.name} vs {file_b.name}")
+            return []
+        return [float(f) for f in feats]
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"  [PARSE ERROR] {file_a.name} vs {file_b.name}: {e}")
+        return []
 
 
 # ─────────────────────────────────────────────
-#  N-gram Helpers
+#  File Discovery
 # ─────────────────────────────────────────────
 
-def make_ngrams(tokens: list, n: int) -> set:
-    if len(tokens) < n:
-        return set()
-    return set(zip(*[tokens[i:] for i in range(n)]))
-
-
-def make_ngram_counts(tokens: list, n: int) -> Counter:
-    """Frequency count of n-grams (needed for vector-based metrics)."""
-    if len(tokens) < n:
-        return Counter()
-    return Counter(zip(*[tokens[i:] for i in range(n)]))
-
-
-def file_ngram_data(tokens: list) -> dict:
-    """
-    Returns both set and count representations for each n-gram size.
-    {n: {"set": set(...), "counts": Counter(...)}}
-    """
-    return {
-        n: {
-            "set":    make_ngrams(tokens, n),
-            "counts": make_ngram_counts(tokens, n),
-        }
-        for n in NGRAM_SIZES
-    }
-
-
-# ─────────────────────────────────────────────
-#  Similarity Metrics
-# ─────────────────────────────────────────────
-
-def jaccard(a: set, b: set) -> float:
-    """Intersection over union of two n-gram sets."""
-    if not a and not b:
-        return 1.0
-    union = len(a | b)
-    return len(a & b) / union if union else 0.0
-
-
-def dice(a: set, b: set) -> float:
-    """
-    Dice coefficient: 2|A∩B| / (|A|+|B|).
-    Similar to Jaccard but weights shared elements more heavily.
-    """
-    if not a and not b:
-        return 1.0
-    denom = len(a) + len(b)
-    return (2 * len(a & b)) / denom if denom else 0.0
-
-
-def _aligned_vectors(ca: Counter, cb: Counter):
-    """
-    Build two aligned frequency arrays over the union vocabulary.
-    Required for vector-space metrics (Gauss, Minkowski).
-    """
-    vocab = list(ca.keys() | cb.keys())
-    va = np.array([ca.get(k, 0) for k in vocab], dtype=float)
-    vb = np.array([cb.get(k, 0) for k in vocab], dtype=float)
-    return va, vb
-
-
-def gauss_kernel(ca: Counter, cb: Counter, sigma: float = GAUSS_SIGMA) -> float:
-    """
-    Gaussian (RBF) kernel: exp(-||va - vb||² / (2σ²)).
-    Returns 1.0 when vectors are identical, approaches 0 as they diverge.
-    """
-    if not ca and not cb:
-        return 1.0
-    if not ca or not cb:
-        return 0.0
-    va, vb = _aligned_vectors(ca, cb)
-    sq_dist = float(np.sum((va - vb) ** 2))
-    return float(np.exp(-sq_dist / (2 * sigma ** 2)))
-
-
-def minkowski_sim(ca: Counter, cb: Counter, p: int = MINKOWSKI_P) -> float:
-    """
-    Minkowski similarity: 1 / (1 + minkowski_distance(va, vb)).
-    Distance of 0 → similarity 1.0; grows large → similarity approaches 0.
-    """
-    if not ca and not cb:
-        return 1.0
-    if not ca or not cb:
-        return 0.0
-    va, vb = _aligned_vectors(ca, cb)
-    dist = float(np.sum(np.abs(va - vb) ** p) ** (1.0 / p))
-    return 1.0 / (1.0 + dist)
-
-
-# ─────────────────────────────────────────────
-#  Feature Extraction  (4 metrics × 3 n-gram sizes = 12 features)
-# ─────────────────────────────────────────────
-
-METRIC_NAMES = ["Jaccard", "Dice", "Gauss", "Minkowski"]
-
-def pair_features(data_a: dict, data_b: dict) -> list:
-    """
-    For every n-gram size, compute all 4 similarity scores.
-    Returns a flat list of 12 floats.
-    Feature order: [J1, D1, G1, M1, J2, D2, G2, M2, J3, D3, G3, M3]
-    """
-    feats = []
-    for n in NGRAM_SIZES:
-        sa, sb = data_a[n]["set"],    data_b[n]["set"]
-        ca, cb = data_a[n]["counts"], data_b[n]["counts"]
-        feats.append(jaccard(sa, sb))
-        feats.append(dice(sa, sb))
-        feats.append(gauss_kernel(ca, cb))
-        feats.append(minkowski_sim(ca, cb))
-    return feats
-
-
-def avg_jaccard_only(feats: list) -> float:
-    """Extract just the Jaccard scores (indices 0,4,8) and average them."""
-    return float(np.mean([feats[n * 4] for n in range(len(NGRAM_SIZES))]))
-
-
-# ─────────────────────────────────────────────
-#  File Loading
-# ─────────────────────────────────────────────
-
-def load_js_files(folder: Path, label: str) -> dict:
+def discover_js_files(folder: Path, label: str) -> dict:
+    """Return {stem: Path} for every .js file in folder."""
     if not folder.exists():
         raise FileNotFoundError(f"Folder not found: {folder}")
     files = {}
     for fpath in sorted(folder.glob("*.js")):
-        tokens = tokenize_with_js(fpath)
-        if tokens:
-            files[fpath.stem] = tokens
-            print(f"  [LOADED {label}] {fpath.name}  ({len(tokens)} tokens)")
-        else:
-            print(f"  [EMPTY/SKIP]    {fpath.name}  (0 tokens returned)")
+        files[fpath.stem] = fpath
+        print(f"  [FOUND {label}] {fpath.name}")
     return files
 
 
 # ─────────────────────────────────────────────
-#  Smart Pairing
+#  Dataset Construction
 # ─────────────────────────────────────────────
 
-def build_dataset(base_files: dict, clone_files: dict):
+def build_dataset(base_files: dict, clone_files: dict) -> tuple:
+    """
+    Builds a 4-class dataset by calling compare.js for each pair.
+    
+    Labels from filename ground truth only:
+        Positive pairs  →  label = clone type (1, 2, or 3)
+        Negative pairs  →  label = 0
+    """
     X, y, pair_meta = [], [], []
+    all_clone_stems = list(clone_files.keys())
+    matched = skipped = negatives = 0
 
-    ng_base   = {name: file_ngram_data(toks) for name, toks in base_files.items()}
-    ng_clones = {name: file_ngram_data(toks) for name, toks in clone_files.items()}
+    for base_stem, base_path in base_files.items():
 
-    matched, skipped = 0, 0
-
-    for base_stem, data_b in ng_base.items():
+        # ── Positive pairs: true clones, label = clone type ───
         for ctype in CLONE_TYPES:
             clone_stem = f"{base_stem}_clon_{ctype}"
-
-            if clone_stem not in ng_clones:
+            if clone_stem not in clone_files:
                 print(f"  [MISSING] {clone_stem}.js")
                 skipped += 1
                 continue
 
-            feats = pair_features(data_b, ng_clones[clone_stem])
-            avg_j = avg_jaccard_only(feats)
-            label = 1 if avg_j >= PLAGIARISM_THRESHOLD else 0
+            feats = compare_with_js(base_path, clone_files[clone_stem])
+            if not feats:
+                skipped += 1
+                continue
 
             X.append(feats)
-            y.append(label)
-            pair_meta.append((base_stem, clone_stem, ctype))
+            y.append(ctype)                          # 1, 2, or 3
+            pair_meta.append((base_stem, clone_stem, ctype, "positive"))
             matched += 1
 
-    print(f"  Pairs matched : {matched}  |  skipped : {skipped}")
+        # ── Negative pairs: unrelated clones, label = 0 ───────
+        unrelated = [
+            s for s in all_clone_stems
+            if not s.startswith(f"{base_stem}_clon_")
+        ]
+        random.seed(RANDOM_STATE + hash(base_stem) % 10000)
+        sampled = random.sample(unrelated, min(NEGATIVES_PER_BASE, len(unrelated)))
+        for neg_stem in sampled:
+            feats = compare_with_js(base_path, clone_files[neg_stem])
+            if not feats:
+                continue
+            X.append(feats)
+            y.append(0)                              # 0 = not a clone
+            pair_meta.append((base_stem, neg_stem, 0, "negative"))
+            negatives += 1
+
+    print(f"\n  Positive pairs (true clones) : {matched}")
+    print(f"  Negative pairs (non-clones)  : {negatives}")
+    print(f"  Skipped (errors/missing)     : {skipped}")
     return np.array(X, dtype=float), np.array(y, dtype=int), pair_meta
 
 
 # ─────────────────────────────────────────────
-#  Result Formatting
+#  Output Helpers
 # ─────────────────────────────────────────────
 
-def _verdict_line(base, clone, ctype, feats, pred, truth=None) -> str:
-    n = len(NGRAM_SIZES)
-    j_avg = float(np.mean([feats[i * 4 + 0] for i in range(n)]))
-    d_avg = float(np.mean([feats[i * 4 + 1] for i in range(n)]))
-    g_avg = float(np.mean([feats[i * 4 + 2] for i in range(n)]))
-    m_avg = float(np.mean([feats[i * 4 + 3] for i in range(n)]))
+CLASS_NAMES = ["Clean (0)", "Type 1 (1)", "Type 2 (2)", "Type 3 (3)"]
 
-    verdict   = "PLAGIARIZED" if pred == 1 else "clean"
-    clone_tag = f"[Type {ctype}]"
+def _verdict_line(base, clone, ctype, kind, feats, pred, truth=None) -> str:
+    """Format one result row with 4 representative metrics."""
+    j   = feats[METRIC_NAMES.index("Jaccard")]
+    d   = feats[METRIC_NAMES.index("Dice")]
+    co  = feats[METRIC_NAMES.index("Cosine")]
+    lv  = feats[METRIC_NAMES.index("LevenshteinRatio")]
 
-    row = (f"  {base:<25} {clone:<32} {clone_tag:<9} "
-           f"J:{j_avg:.3f} D:{d_avg:.3f} G:{g_avg:.3f} M:{m_avg:.3f}  "
-           f"{verdict:<12}")
+    verdict  = "clean" if pred == 0 else f"PLAGIARIZED/T{pred}"
+    pair_tag = f"[T{ctype}]" if ctype > 0 else "[neg]"
+
+    row = (f"  {base:<22} {clone:<30} {pair_tag:<7} "
+           f"J:{j:.3f} D:{d:.3f} Cos:{co:.3f} Lev:{lv:.3f}  "
+           f"{verdict:<16}")
 
     if truth is not None:
-        true_l = "PLAGIARIZED" if truth == 1 else "clean"
+        true_v = "clean" if truth == 0 else f"PLAGIARIZED/T{truth}"
         flag   = "OK" if pred == truth else "WRONG"
-        row += f"  truth:{true_l:<12} {flag}"
+        row   += f"  truth:{true_v:<16} {flag}"
 
     return row
 
 
 def _print_header(with_truth=False):
-    base_hdr = (f"  {'Base':<25} {'Clone':<32} {'CloneType':<9} "
-                f"{'Jaccard':>9} {'Dice':>7} {'Gauss':>7} {'Minkowski':>10}  "
-                f"{'Verdict':<12}")
+    h = (f"  {'Base':<22} {'Clone':<30} {'Type':<7} "
+         f"{'Jaccard':>9} {'Dice':>7} {'Cosine':>8} {'Levenshtn':>10}  "
+         f"{'Verdict':<16}")
     if with_truth:
-        base_hdr += "  Truth"
-    print(base_hdr)
-    print("  " + "-" * (len(base_hdr) + 5))
+        h += "  Truth"
+    print(h)
+    print("  " + "-" * (len(h) + 4))
+
+
+def _print_confusion(cm):
+    """Print 4×4 confusion matrix for 4 classes."""
+    labels = ["Clean", "Type1", "Type2", "Type3"]
+    print(f"  {'':>14} " + " ".join(f"{l:>8}" for l in labels))
+    for i, name in enumerate(labels):
+        print(f"  {name:<14} " + " ".join(f"{cm[i, j]:>8}" for j in range(4)))
+
+
+def _per_type_accuracy(y_true, y_pred, idx_test, pair_meta):
+    """Print accuracy per class."""
+    for ctype in [0, 1, 2, 3]:
+        ct_idx = [i for i, idx in enumerate(idx_test)
+                  if pair_meta[idx][2] == ctype]
+        if not ct_idx:
+            continue
+        acc = accuracy_score(y_true[ct_idx], y_pred[ct_idx])
+        print(f"    {CLASS_NAMES[ctype]}: {len(ct_idx)} pairs  accuracy={acc:.4f}")
 
 
 # ─────────────────────────────────────────────
@@ -288,214 +216,171 @@ def train_and_evaluate(
     X: np.ndarray, y: np.ndarray, pair_meta: list,
     X_unseen: np.ndarray, y_unseen: np.ndarray, meta_unseen: list,
 ):
-    n_metrics = len(METRIC_NAMES)
-    n_feats   = len(NGRAM_SIZES) * n_metrics   # 12
+    n_feats = X.shape[1]
 
     print("\n" + "=" * 65)
     print(f"  TRAINING POOL SUMMARY  ({int(TRAIN_FILE_RATIO*100)}% of base files)")
     print("=" * 65)
     print(f"  Total pairs      : {len(y)}")
-    print(f"  Plagiarized (1)  : {int(y.sum())}")
-    print(f"  Clean (0)        : {int((y == 0).sum())}")
-    print(f"  Features ({n_feats})    : {METRIC_NAMES} × n-grams {NGRAM_SIZES}")
-    print(f"  Threshold        : {PLAGIARISM_THRESHOLD}  (on avg Jaccard)")
+    for c, name in enumerate(CLASS_NAMES):
+        print(f"    {name:<14}: {int((y == c).sum())}")
+    print(f"  Features ({n_feats})   : {METRIC_NAMES}")
+    print(f"  Labels           : filename ground truth (no threshold bias)")
     print(f"\n  Decision Tree config:")
-    print(f"    criterion      : {DT_CRITERION}  (split quality measure)")
-    print(f"    max_depth      : {DT_MAX_DEPTH if DT_MAX_DEPTH is not None else 'None (unlimited)'}")
+    print(f"    criterion         : {DT_CRITERION}")
+    print(f"    max_depth         : {DT_MAX_DEPTH if DT_MAX_DEPTH else 'None (unlimited)'}")
     print(f"    min_samples_split : {DT_MIN_SAMPLES_SPLIT}")
     print(f"    min_samples_leaf  : {DT_MIN_SAMPLES_LEAF}")
-    print(f"    max_features   : {DT_MAX_FEATURES if DT_MAX_FEATURES is not None else 'None (all)'}")
-    print(f"    class_weight   : {DT_CLASS_WEIGHT if DT_CLASS_WEIGHT is not None else 'None (uniform)'}")
-
-    print("\n  Pairs by clone type:")
-    for ctype in CLONE_TYPES:
-        idx = [i for i, (_, _, t) in enumerate(pair_meta) if t == ctype]
-        plag = int(y[idx].sum()) if idx else 0
-        print(f"    Type {ctype}: {len(idx)} pairs  ({plag} labeled plagiarized)")
+    print(f"    max_features      : {DT_MAX_FEATURES if DT_MAX_FEATURES else 'None (all)'}")
+    print(f"    class_weight      : {DT_CLASS_WEIGHT if DT_CLASS_WEIGHT else 'None (uniform)'}")
 
     if len(set(y)) < 2:
-        print("\n[WARNING] Only one class in labels — adjust --threshold.")
-        _print_all_pairs(X, y, pair_meta)
+        print("\n[WARNING] Only one class present — cannot train.")
         return
 
-    # ── Split ──────────────────────────────────────────────────────────────
+    # ── Split ──────────────────────────────────────────────────
     indices = list(range(len(y)))
     X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
         X, y, indices,
         test_size=TEST_SIZE,
         random_state=RANDOM_STATE,
-        stratify=y,
+        # stratify omitted — avoids crash with < 2 members per class
     )
 
-    # ── Scale — not strictly required for Decision Trees (splits are threshold-based,
-    #   not distance-based) but kept for consistency across models.
-    scaler = StandardScaler()
-    X_train_sc = scaler.fit_transform(X_train)
-    X_test_sc  = scaler.transform(X_test)
+    # ── Note: Scaling NOT applied for Decision Trees ────────────
+    # Trees don't require feature scaling (splits are threshold-based)
+    # Using X directly instead of scaled version
 
-    # ── Decision Tree ──────────────────────────────────────────────────────
-    #
-    #  Why Decision Tree for clone detection?
-    #  Decision Trees learn explicit if-then rules over the 12 similarity
-    #  features, making predictions fully interpretable: "if Jaccard_n1 >= 0.72
-    #  AND Gauss_n2 >= 0.85 → PLAGIARIZED".  This is valuable for auditing why
-    #  a particular pair was flagged, unlike black-box models.
-    #
-    #  Trade-offs:
-    #    • max_depth=None → deep tree can overfit small datasets.  Prune with
-    #      --max-depth (3–6 usually generalises well).
-    #    • criterion='entropy' tends to produce slightly more balanced splits
-    #      than 'gini' on imbalanced classes.
-    #    • class_weight='balanced' compensates when clean pairs vastly outnumber
-    #      plagiarised pairs.
-    #
+    # ── Decision Tree ──────────────────────────────────────────
     clf = DecisionTreeClassifier(
-        criterion        = DT_CRITERION,
-        max_depth        = DT_MAX_DEPTH,
-        min_samples_split= DT_MIN_SAMPLES_SPLIT,
-        min_samples_leaf = DT_MIN_SAMPLES_LEAF,
-        max_features     = DT_MAX_FEATURES,
-        class_weight     = DT_CLASS_WEIGHT,
-        random_state     = RANDOM_STATE,
+        criterion         = DT_CRITERION,
+        max_depth         = DT_MAX_DEPTH,
+        min_samples_split = DT_MIN_SAMPLES_SPLIT,
+        min_samples_leaf  = DT_MIN_SAMPLES_LEAF,
+        max_features      = DT_MAX_FEATURES,
+        class_weight      = DT_CLASS_WEIGHT,
+        random_state      = RANDOM_STATE,
     )
 
     print("\n" + "=" * 65)
     print(f"  TRAINING  (DecisionTree criterion={DT_CRITERION} "
-          f"max_depth={DT_MAX_DEPTH} — 12 features)")
+          f"max_depth={DT_MAX_DEPTH} — {n_feats} features, 4 classes)")
     print("=" * 65)
-
-    clf.fit(X_train_sc, y_train)
-
+    clf.fit(X_train, y_train)
     print(f"  Training completed.")
     print(f"  Tree depth (actual)  : {clf.get_depth()}")
     print(f"  Number of leaves     : {clf.get_n_leaves()}")
 
-    # ── Eval metrics ───────────────────────────────────────────────────────
-    y_pred = clf.predict(X_test_sc)
-    y_prob = clf.predict_proba(X_test_sc)[:, 1]
+    # ── Evaluation ─────────────────────────────────────────────
+    y_pred = clf.predict(X_test)
 
     print("\n" + "=" * 65)
-    print("  EVALUATION  (internal test set)")
+    print("  EVALUATION  (internal test set — 4 classes)")
     print("=" * 65)
     print(f"  Accuracy : {accuracy_score(y_test, y_pred):.4f}\n")
-    print(classification_report(y_test, y_pred,
-                                 target_names=["Clean (0)", "Plagiarized (1)"]))
+    print(classification_report(y_test, y_pred, target_names=CLASS_NAMES))
 
-    cm = confusion_matrix(y_test, y_pred)
-    print("  Confusion Matrix:")
-    print(f"               Pred Clean  Pred Plagiarized")
-    print(f"  True Clean         {cm[0,0]:>5}            {cm[0,1]:>5}")
-    print(f"  True Plagiarized   {cm[1,0]:>5}            {cm[1,1]:>5}")
+    cm = confusion_matrix(y_test, y_pred, labels=[0, 1, 2, 3])
+    print("  Confusion Matrix (rows=truth, cols=predicted):")
+    _print_confusion(cm)
 
-    print("\n  Accuracy by clone type (test pairs):")
-    for ctype in CLONE_TYPES:
-        ct_idx = [i for i, idx in enumerate(idx_test) if pair_meta[idx][2] == ctype]
-        if not ct_idx:
-            print(f"    Type {ctype}: no test pairs")
-            continue
-        acc = accuracy_score(y_test[ct_idx], y_pred[ct_idx])
-        print(f"    Type {ctype}: {len(ct_idx)} pairs  accuracy={acc:.4f}")
+    print("\n  Accuracy by class (test pairs):")
+    _per_type_accuracy(y_test, y_pred, idx_test, pair_meta)
 
-    # ── Feature importances ─────────────────────────────────────────────────
-    feat_labels = [f"{m[0]}n{n}" for n in NGRAM_SIZES for m in METRIC_NAMES]
+    # ── Feature importances ────────────────────────────────────
     importances = clf.feature_importances_
     sorted_idx  = np.argsort(importances)[::-1]
     print("\n  Feature importances (Gini decrease, sorted):")
-    for i in sorted_idx:
-        label = feat_labels[i] if i < len(feat_labels) else f"f{i}"
-        bar   = "█" * int(importances[i] * 40)
-        print(f"    {label:<8}  {importances[i]:.4f}  {bar}")
+    for i in sorted_idx[:10]:
+        bar = "█" * int(importances[i] * 40)
+        print(f"    {METRIC_NAMES[i]:<20} {importances[i]:.4f}  {bar}")
 
-    # ── Decision Tree text representation ──────────────────────────────────
-    #
-    #  Prints the human-readable decision rules.
-    #  Truncated to max_depth=4 for readability when tree is very deep.
-    #
+    # ── Decision Tree text representation ───────────────────────
     print("\n" + "=" * 65)
     print("  DECISION TREE RULES  (text representation, depth ≤ 4)")
     print("=" * 65)
     tree_text = export_text(
         clf,
-        feature_names=feat_labels,
+        feature_names=METRIC_NAMES,
         max_depth=4,
         show_weights=True,
     )
     print(tree_text)
 
-    # ── Depth sensitivity analysis ──────────────────────────────────────────
+    # ── Max depth sensitivity analysis ─────────────────────────
     print("\n" + "=" * 65)
     print("  MAX DEPTH SENSITIVITY  (accuracy vs max_depth on test set)")
     print("=" * 65)
-    print(f"  {'depth':>6}   {'Accuracy':>9}   {'Leaves':>7}   {'# Plagiarized pred':>20}")
+    print(f"  {'depth':>6}   {'Accuracy':>9}   {'Leaves':>7}")
     for depth in [1, 2, 3, 4, 5, 6, 8, 10, None]:
         dt_d = DecisionTreeClassifier(
-            criterion=DT_CRITERION, max_depth=depth,
+            criterion=DT_CRITERION,
+            max_depth=depth,
             min_samples_split=DT_MIN_SAMPLES_SPLIT,
             min_samples_leaf=DT_MIN_SAMPLES_LEAF,
             random_state=RANDOM_STATE,
         )
-        dt_d.fit(X_train_sc, y_train)
-        preds_d = dt_d.predict(X_test_sc)
+        dt_d.fit(X_train, y_train)
+        preds_d = dt_d.predict(X_test)
         acc_d   = accuracy_score(y_test, preds_d)
         leaves  = dt_d.get_n_leaves()
-        n_plag  = int(preds_d.sum())
         depth_str = str(depth) if depth is not None else "None"
         marker = "  ← current" if depth == DT_MAX_DEPTH else ""
-        print(f"  {depth_str:>6}   {acc_d:>9.4f}   {leaves:>7}   {n_plag:>20}{marker}")
+        print(f"  {depth_str:>6}   {acc_d:>9.4f}   {leaves:>7}{marker}")
 
-    # Top confident test predictions
-    print("\n  Most confident predictions (by P(plagiarized)):")
-    sorted_prob = np.argsort(y_prob)[::-1]
-    for rank, i in enumerate(sorted_prob[:5], 1):
-        idx   = idx_test[i]
-        base, clone, ctype = pair_meta[idx]
-        label = "PLAGIARIZED" if y_pred[i] == 1 else "clean"
-        print(f"    #{rank}  {base} vs {clone}  P={y_prob[i]:.4f}  → {label}")
-
-    # ── Per-pair test results ───────────────────────────────────────────────
+    # ── Per-pair test detail ───────────────────────────────────
     print("\n" + "=" * 65)
     print("  PER-PAIR RESULTS  (internal test set)")
     print("=" * 65)
     _print_header(with_truth=True)
     for i, idx in enumerate(idx_test):
-        base, clone, ctype = pair_meta[idx]
-        print(_verdict_line(base, clone, ctype, X[idx], y_pred[i], truth=y_test[i]))
+        base, clone, ctype, kind = pair_meta[idx]
+        print(_verdict_line(base, clone, ctype, kind,
+                            X[idx], y_pred[i], truth=y_test[i]))
 
-    # ── Full training pool table ────────────────────────────────────────────
+    # ── Full training pool table ───────────────────────────────
     print("\n" + "=" * 65)
     print("  FULL PREDICTION TABLE  (training pool)")
     print("=" * 65)
-    all_pred = clf.predict(scaler.transform(X))
+    all_pred = clf.predict(X)
     _print_header(with_truth=False)
-    for i, (base, clone, ctype) in enumerate(pair_meta):
-        print(_verdict_line(base, clone, ctype, X[i], all_pred[i]))
+    for i, (base, clone, ctype, kind) in enumerate(pair_meta):
+        print(_verdict_line(base, clone, ctype, kind, X[i], all_pred[i]))
 
-    # ── Unseen pool predictions ─────────────────────────────────────────────
+    # ── Unseen pool predictions ────────────────────────────────
     if len(X_unseen) > 0:
         print("\n" + "=" * 65)
-        print(f"  UNSEEN FILES PREDICTIONS  (remaining {int((1-TRAIN_FILE_RATIO)*100)}%)")
+        print(f"  UNSEEN FILES PREDICTIONS  "
+              f"(remaining {int((1-TRAIN_FILE_RATIO)*100)}%)")
         print("=" * 65)
 
-        unseen_pred = clf.predict(scaler.transform(X_unseen))
+        unseen_pred = clf.predict(X_unseen)
 
         if len(set(y_unseen)) >= 2:
-            print(f"  Accuracy on unseen : {accuracy_score(y_unseen, unseen_pred):.4f}\n")
+            print(f"  Accuracy on unseen : "
+                  f"{accuracy_score(y_unseen, unseen_pred):.4f}\n")
             print(classification_report(y_unseen, unseen_pred,
-                                         target_names=["Clean (0)", "Plagiarized (1)"]))
+                                        target_names=CLASS_NAMES))
         else:
             print("  (Only one class in unseen labels — skipping metrics)\n")
 
         _print_header(with_truth=True)
-        for i, (base, clone, ctype) in enumerate(meta_unseen):
-            print(_verdict_line(base, clone, ctype, X_unseen[i],
+        for i, (base, clone, ctype, kind) in enumerate(meta_unseen):
+            print(_verdict_line(base, clone, ctype, kind, X_unseen[i],
                                 unseen_pred[i], truth=y_unseen[i]))
 
-
-def _print_all_pairs(X, y, pair_meta):
-    """Fallback when only one label class exists."""
-    _print_header(with_truth=True)
-    for i, (base, clone, ctype) in enumerate(pair_meta):
-        print(_verdict_line(base, clone, ctype, X[i], int(y[i]), truth=int(y[i])))
+    # ── Final accuracy summary ─────────────────────────────────
+    print("\n" + "=" * 65)
+    print("  FINAL ACCURACY SUMMARY  (Decision Tree)")
+    print("=" * 65)
+    acc_train = accuracy_score(y_train, clf.predict(X_train))
+    acc_test  = accuracy_score(y_test,  y_pred)
+    if len(X_unseen) > 0:
+        acc_unseen = accuracy_score(y_unseen, clf.predict(X_unseen))
+        print(f"  train={acc_train:.4f}  test={acc_test:.4f}  "
+              f"unseen={acc_unseen:.4f}")
+    else:
+        print(f"  train={acc_train:.4f}  test={acc_test:.4f}")
 
 
 # ─────────────────────────────────────────────
@@ -503,53 +388,31 @@ def _print_all_pairs(X, y, pair_meta):
 # ─────────────────────────────────────────────
 
 def main():
-    global PLAGIARISM_THRESHOLD
     global DT_CRITERION, DT_MAX_DEPTH, DT_MIN_SAMPLES_SPLIT
     global DT_MIN_SAMPLES_LEAF, DT_MAX_FEATURES, DT_CLASS_WEIGHT
 
     parser = argparse.ArgumentParser(
-        description="Plagiarism detector — Decision Tree classifier."
+        description="Plagiarism detector — Decision Tree, 16-feature compare.js."
     )
-    parser.add_argument(
-        "--threshold", type=float, default=PLAGIARISM_THRESHOLD,
-        help=f"Avg-Jaccard threshold to label a pair plagiarized (default: {PLAGIARISM_THRESHOLD})."
-    )
-    parser.add_argument(
-        "--criterion", type=str, default=DT_CRITERION,
-        choices=["gini", "entropy", "log_loss"],
-        help=f"Split quality criterion (default: {DT_CRITERION})."
-    )
-    parser.add_argument(
-        "--max-depth", type=int, default=None,
-        help="Maximum tree depth (default: None = unlimited)."
-    )
-    parser.add_argument(
-        "--min-samples-split", type=int, default=DT_MIN_SAMPLES_SPLIT,
-        help=f"Min samples to split a node (default: {DT_MIN_SAMPLES_SPLIT})."
-    )
-    parser.add_argument(
-        "--min-samples-leaf", type=int, default=DT_MIN_SAMPLES_LEAF,
-        help=f"Min samples at a leaf node (default: {DT_MIN_SAMPLES_LEAF})."
-    )
-    parser.add_argument(
-        "--max-features", type=str, default=None,
-        help="Max features per split: 'sqrt', 'log2', int, or float (default: None = all)."
-    )
-    parser.add_argument(
-        "--class-weight", type=str, default=None,
-        choices=["balanced"],
-        help="Class weight strategy (default: None = uniform)."
-    )
+    parser.add_argument("--criterion", type=str, default=DT_CRITERION,
+                        choices=["gini", "entropy", "log_loss"])
+    parser.add_argument("--max-depth", type=int, default=None)
+    parser.add_argument("--min-samples-split", type=int,
+                        default=DT_MIN_SAMPLES_SPLIT)
+    parser.add_argument("--min-samples-leaf", type=int,
+                        default=DT_MIN_SAMPLES_LEAF)
+    parser.add_argument("--max-features", type=str, default=None)
+    parser.add_argument("--class-weight", type=str, default=None,
+                        choices=["balanced"])
     args = parser.parse_args()
 
-    PLAGIARISM_THRESHOLD  = args.threshold
-    DT_CRITERION          = args.criterion
-    DT_MAX_DEPTH          = args.max_depth
-    DT_MIN_SAMPLES_SPLIT  = args.min_samples_split
-    DT_MIN_SAMPLES_LEAF   = args.min_samples_leaf
-    DT_CLASS_WEIGHT       = args.class_weight
+    DT_CRITERION         = args.criterion
+    DT_MAX_DEPTH         = args.max_depth
+    DT_MIN_SAMPLES_SPLIT = args.min_samples_split
+    DT_MIN_SAMPLES_LEAF  = args.min_samples_leaf
+    DT_CLASS_WEIGHT      = args.class_weight
 
-    # Parse max_features: None | 'sqrt' | 'log2' | int | float
+    # Parse max_features
     if args.max_features is None:
         DT_MAX_FEATURES = None
     elif args.max_features in ("sqrt", "log2"):
@@ -563,35 +426,35 @@ def main():
             except ValueError:
                 DT_MAX_FEATURES = None
 
-    if not TOKENIZER_JS.exists():
-        print(f"\n[ERROR] Tokenizer not found: {TOKENIZER_JS}")
+    if not COMPARE_JS.exists():
+        print(f"\n[ERROR] compare.js not found: {COMPARE_JS}")
         return
 
     print("\n" + "=" * 65)
-    print("  LOADING FILES  (via JS tokenizer)")
+    print("  DISCOVERING FILES")
     print("=" * 65)
 
     print(f"\n  Base files  ->  {BASE_DIR}")
-    base_files = load_js_files(BASE_DIR, "BASE")
+    base_files = discover_js_files(BASE_DIR, "BASE")
 
     print(f"\n  Clone files ->  {CLONES_DIR}")
-    clone_files = load_js_files(CLONES_DIR, "CLONE")
+    clone_files = discover_js_files(CLONES_DIR, "CLONE")
 
     if not base_files:
-        print("\n[ERROR] No base .js files loaded.")
+        print("\n[ERROR] No base .js files found.")
         return
     if not clone_files:
-        print("\n[ERROR] No clone .js files loaded.")
+        print("\n[ERROR] No clone .js files found.")
         return
 
-    import random
+    # ── File-level train / unseen split ───────────────────────
     all_base_stems = sorted(base_files.keys())
     random.seed(RANDOM_STATE)
     random.shuffle(all_base_stems)
 
-    n_train_files = max(1, round(len(all_base_stems) * TRAIN_FILE_RATIO))
-    train_stems   = set(all_base_stems[:n_train_files])
-    unseen_stems  = set(all_base_stems[n_train_files:])
+    n_train      = max(1, round(len(all_base_stems) * TRAIN_FILE_RATIO))
+    train_stems  = set(all_base_stems[:n_train])
+    unseen_stems = set(all_base_stems[n_train:])
 
     train_base_files  = {s: base_files[s] for s in train_stems}
     unseen_base_files = {s: base_files[s] for s in unseen_stems}
@@ -600,8 +463,10 @@ def main():
     print("  FILE SPLIT")
     print("=" * 65)
     print(f"  Total base files        : {len(all_base_stems)}")
-    print(f"  Training pool ({int(TRAIN_FILE_RATIO*100):>2}%)  : {len(train_stems)} files  {sorted(train_stems)}")
-    print(f"  Unseen pool   ({int((1-TRAIN_FILE_RATIO)*100):>2}%)  : {len(unseen_stems)} files")
+    print(f"  Training pool ({int(TRAIN_FILE_RATIO*100):>2}%)  : "
+          f"{len(train_stems)} files  {sorted(train_stems)}")
+    print(f"  Unseen pool   ({int((1-TRAIN_FILE_RATIO)*100):>2}%)  : "
+          f"{len(unseen_stems)} files")
 
     print("\n" + "=" * 65)
     print(f"  BUILDING TRAINING DATASET  ({int(TRAIN_FILE_RATIO*100)}% of files)")
@@ -609,11 +474,12 @@ def main():
     X, y, pair_meta = build_dataset(train_base_files, clone_files)
 
     if len(X) == 0:
-        print("\n[ERROR] No pairs built. Check clone filenames: <base>_clon_<1|2|3>.js")
+        print("\n[ERROR] No pairs built.")
         return
 
     print("\n" + "=" * 65)
-    print(f"  BUILDING UNSEEN DATASET  (remaining {int((1-TRAIN_FILE_RATIO)*100)}% of files)")
+    print(f"  BUILDING UNSEEN DATASET  "
+          f"(remaining {int((1-TRAIN_FILE_RATIO)*100)}% of files)")
     print("=" * 65)
     X_unseen, y_unseen, meta_unseen = build_dataset(unseen_base_files, clone_files)
 

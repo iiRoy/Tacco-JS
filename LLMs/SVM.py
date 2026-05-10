@@ -15,8 +15,8 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 # ─────────────────────────────────────────────
 
 COMPARE_JS = Path("Vectorization/compare.js")
-BASE_DIR   = Path("dataset/dataset general/js_files")
-CLONES_DIR = Path("dataset/dataset general/clones")
+BASE_DIR   = Path("dataset_copy/dataset general/js_files")
+CLONES_DIR = Path("dataset_copy/dataset general/clones")
 
 CLONE_TYPES        = [1, 2, 3]
 COMPARE_MODE       = 1          # 1=type, 2=value, 3=type-value

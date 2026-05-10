@@ -228,7 +228,6 @@ def train_and_evaluate(
         X, y, indices,
         test_size=TEST_SIZE,
         random_state=RANDOM_STATE,
-        # stratify omitted — avoids crash when a class has < 2 members
     )
  
     # ── Scale (mandatory for MLP) ───────────────────────────────
@@ -261,7 +260,7 @@ def train_and_evaluate(
  
     # ── Evaluation ─────────────────────────────────────────────
     y_pred = clf.predict(X_test_sc)
-    y_prob = clf.predict_proba(X_test_sc)   # shape (n_samples, 4)
+    y_prob = clf.predict_proba(X_test_sc)
  
     print("\n" + "=" * 65)
     print("  EVALUATION  (internal test set — 4 classes)")
@@ -273,8 +272,14 @@ def train_and_evaluate(
     print("  Confusion Matrix (rows=truth, cols=predicted):")
     _print_confusion(cm)
  
-    print("\n  Accuracy by class (test pairs):")
-    _per_type_accuracy(y_test, y_pred, idx_test, pair_meta)
+    print("\n  Accuracy by clone type (test pairs):")
+    for ctype in CLONE_TYPES:
+        ct_idx = [i for i, idx in enumerate(idx_test) if pair_meta[idx][2] == ctype]
+        if not ct_idx:
+            print(f"    Type {ctype}: no test pairs")
+            continue
+        acc = accuracy_score(y_test[ct_idx], y_pred[ct_idx])
+        print(f"    Type {ctype}: {len(ct_idx)} pairs  accuracy={acc:.4f}")
  
     # ── Layer weight summary ───────────────────────────────────
     print("\n  Network layer shapes:")
