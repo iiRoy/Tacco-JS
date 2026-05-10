@@ -170,7 +170,6 @@ def _verdict_line(base, clone, ctype, kind, feats, pred, truth=None) -> str:
  
     return row
  
- 
 def _print_header(with_truth=False):
     h = (f"  {'Base':<22} {'Clone':<30} {'Type':<7} "
          f"{'Jaccard':>9} {'Dice':>7} {'Cosine':>8} {'Levenshtn':>10}  "
