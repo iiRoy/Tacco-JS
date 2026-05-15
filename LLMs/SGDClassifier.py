@@ -3,6 +3,7 @@ import json
 import random
 import subprocess
 import argparse
+import joblib
 import numpy as np
 from pathlib import Path
 from sklearn.linear_model import SGDClassifier
@@ -268,6 +269,22 @@ def train_and_evaluate(
     clf.fit(X_train_sc, y_train)
 
     print(f"  Training completed.  Iterations: {clf.n_iter_}")
+
+    SCRIPT_DIR = Path(__file__).resolve().parent
+    model_dir = SCRIPT_DIR / "Models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    joblib.dump(
+        {
+            "model": clf,
+            "scaler": scaler,
+            "metric_names": METRIC_NAMES,
+            "class_names": CLASS_NAMES,
+        },
+        model_dir / "sgd_classifier_model.joblib"
+    )
+
+    print(f"  Modelo guardado en: {model_dir / 'sgd_classifier_model.joblib'}")
 
     # ── Eval metrics ───────────────────────────────────────────────────────
     y_pred = clf.predict(X_test_sc)

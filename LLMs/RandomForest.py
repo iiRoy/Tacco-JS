@@ -2,6 +2,7 @@ import json
 import random
 import subprocess
 import argparse
+import joblib
 import numpy as np
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
@@ -270,6 +271,23 @@ def train_and_evaluate(
     print("=" * 65)
     clf.fit(X_train_sc, y_train)
     print("  Training completed.")
+    
+    SCRIPT_DIR = Path(__file__).resolve().parent
+    model_dir = SCRIPT_DIR / "Models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    joblib.dump(
+        {
+            "model": clf,
+            "scaler": scaler,
+            "metric_names": METRIC_NAMES,
+            "class_names": CLASS_NAMES,
+        },
+        model_dir / "random_forest_model.joblib"
+    )
+
+    print(f"  Modelo guardado en: {model_dir / 'random_forest_model.joblib'}")
+
     if oob:
         print(f"  OOB score (generalisation estimate) : {clf.oob_score_:.4f}")
  

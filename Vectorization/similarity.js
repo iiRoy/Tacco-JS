@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { tokenizeFile } from "../Tokenizer/Tokenizer-Parser.js";
+import { tokenizeFile } from "../Tokenizer/Tokenizer-Tokenizr.js";
 
 /*
   ============================================================
@@ -560,13 +560,86 @@ function vectorize(O, CA, T, options = {}) {
   ============================================================
 */
 
-function main() {
-  const result = vectorize(BASE_CODE_ID, CLONE_CODE_ID, VECTORIZE_MODE, {
-    datasetRoot: DATASET_ROOT,
-    ngramSize: NGRAM_SIZE,
-  });
+function printUsage() {
+  console.error(`
+Uso para comparar dos archivos:
+  node Vectorization/similarity.js archivoA.js archivoB.js [modo]
 
-  console.log(JSON.stringify(result, null, 2));
+Modos:
+  1 = type
+  2 = value
+  3 = type-value
+
+Ejemplo:
+  node Vectorization/similarity.js problem_original.js problem_1.js 3
+
+Uso para vectorizar dataset:
+  node Vectorization/similarity.js --dataset [O] [CA] [modo]
+
+Ejemplo:
+  node Vectorization/similarity.js --dataset 1 1 3
+`);
+}
+
+function parseVectorizeMode(modeArg) {
+  const modeNumber = Number(modeArg ?? VECTORIZE_MODE);
+
+  if (!MODE_MAP[modeNumber]) {
+    throw new Error(
+      `Modo invalido: ${modeArg}. Usa 1 (type), 2 (value) o 3 (type-value).`
+    );
+  }
+
+  return modeNumber;
+}
+
+function main() {
+  const args = process.argv.slice(2);
+
+  try {
+    /*
+      Modo dataset:
+      node similarity.js --dataset 1 1 3
+    */
+    if (args[0] === "--dataset") {
+      const O = Number(args[1] ?? BASE_CODE_ID);
+      const CA = Number(args[2] ?? CLONE_CODE_ID);
+      const vectorizeMode = parseVectorizeMode(args[3] ?? VECTORIZE_MODE);
+
+      const result = vectorize(O, CA, vectorizeMode, {
+        datasetRoot: DATASET_ROOT,
+        ngramSize: NGRAM_SIZE,
+      });
+
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    /*
+      Modo prediccion individual:
+      node similarity.js archivoA.js archivoB.js 3
+    */
+    const fileA = args[0];
+    const fileB = args[1];
+
+    if (!fileA || !fileB) {
+      printUsage();
+      process.exit(1);
+    }
+
+    const vectorizeMode = parseVectorizeMode(args[2] ?? VECTORIZE_MODE);
+    const mode = MODE_MAP[vectorizeMode];
+
+    const result = compareTwoFiles(fileA, fileB, {
+      mode,
+      ngramSize: NGRAM_SIZE,
+    });
+
+    console.log(JSON.stringify(result, null, 2));
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

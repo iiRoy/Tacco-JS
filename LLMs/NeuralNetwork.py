@@ -1,6 +1,7 @@
 import json
 import random
 import subprocess
+import joblib
 import argparse
 import numpy as np
 from pathlib import Path
@@ -255,6 +256,23 @@ def train_and_evaluate(
     print("=" * 65)
     clf.fit(X_train_sc, y_train)
     print(f"  Training completed.  Epochs run: {clf.n_iter_}")
+
+    SCRIPT_DIR = Path(__file__).resolve().parent
+    model_dir = SCRIPT_DIR / "Models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    joblib.dump(
+        {
+            "model": clf,
+            "scaler": scaler,
+            "metric_names": METRIC_NAMES,
+            "class_names": CLASS_NAMES,
+        },
+        model_dir / "neural_network_model.joblib"
+    )
+
+    print(f"  Modelo guardado en: {model_dir / 'neural_network_model.joblib'}")
+
     if MLP_EARLY_STOPPING:
         print(f"  Best validation score: {clf.best_validation_score_:.4f}")
  

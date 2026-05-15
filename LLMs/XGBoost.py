@@ -1,8 +1,8 @@
-import sys
 import json
 import random
 import subprocess
 import argparse
+import joblib
 import time
 import os
 import hashlib
@@ -22,8 +22,8 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 # ─────────────────────────────────────────────
 
 COMPARE_JS = Path("Vectorization/compare.js")
-BASE_DIR = Path("dataset/dataset general/js_files")
-CLONES_DIR = Path("dataset/dataset general/clones")
+BASE_DIR = Path("dataset/dataset solutions/js_files")
+CLONES_DIR = Path("dataset/dataset solutions/clones")
 
 CACHE_DIR = Path(".cache")
 FEATURE_CACHE = CACHE_DIR / "features_cache.npz"
@@ -34,10 +34,14 @@ META_CACHE = CACHE_DIR / "features_meta.json"
 #  Config
 # ─────────────────────────────────────────────
 
-CLONE_TYPES = [1, 2, 3]
-COMPARE_MODE = 1  # 1=type, 2=value, 3=type-value
-PLAGIARISM_THRESHOLD = 0.5
-TRAIN_FILE_RATIO = 0.10
+CLONE_TYPES = [1, 2, 3, 4]
+
+# 1 = type
+# 2 = value
+# 3 = type-value
+COMPARE_MODE = 3
+
+TRAIN_FILE_RATIO = 0.20
 TEST_SIZE = 0.15
 RANDOM_STATE = 42
 
@@ -45,11 +49,27 @@ RANDOM_STATE = 42
 NEGATIVES_PER_BASE = 3
 
 METRIC_NAMES = [
-    "Jaccard", "Dice", "LevenshteinRatio", "Jaro", "JaroWinkler",
-    "Cosine", "Overlap", "LCSRatio", "NgramJaccard", "NgramDice",
-    "GaussManhattan", "GaussEuclidean", "GaussMinkowski", "GaussChebyshev",
-    "LengthRatio", "VocabularyRatio",
+    "Jaccard",
+    "Dice",
+    "LevenshteinDistance",
+    "LevenshteinRatio",
+    "Cosine",
+    "LCSDistance",
+    "LCSRatio",
+    "NgramSimilarity",
+    "LengthRatio",
+    "VocabularyRatio",
 ]
+
+CLASS_NAMES = [
+    "Clean (0)",
+    "Type 1 (1)",
+    "Type 2 (2)",
+    "Type 3 (3)",
+    "Type 4 (4)",
+]
+
+CLASS_LABELS = [0, 1, 2, 3, 4]
 
 
 # ─────────────────────────────────────────────
@@ -100,13 +120,15 @@ def compare_with_js(file_a: Path, file_b: Path) -> list:
         return []
 
     try:
-        return json.loads(result.stdout.strip())
+        feats = json.loads(result.stdout.strip())
     except json.JSONDecodeError:
         print(
             f"  [JSON ERROR] {file_a.name} vs {file_b.name}: "
             f"{result.stdout.strip()[:160]}"
         )
         return []
+
+    return feats
 
 
 def compute_pair(job: tuple):
@@ -115,6 +137,13 @@ def compute_pair(job: tuple):
 
     job format:
         (base_stem, clone_stem, ctype, label_mode)
+
+    Labels:
+        negative pair -> 0
+        clone type 1  -> 1
+        clone type 2  -> 2
+        clone type 3  -> 3
+        clone type 4  -> 4
     """
     base_stem, clone_stem, ctype, label_mode = job
 
@@ -134,7 +163,7 @@ def compute_pair(job: tuple):
         return None
 
     if label_mode == "positive":
-        label = 1 if feats[0] >= PLAGIARISM_THRESHOLD else 0
+        label = int(ctype)
     else:
         label = 0
 
@@ -150,12 +179,8 @@ def build_jobs(base_stems: list, clones_dir: Path) -> tuple:
     jobs = []
     skipped_missing = 0
 
-    total = len(base_stems)
-    for idx, base_stem in enumerate(base_stems, 1):
-        print(f"  [{idx}/{total}] {base_stem}.js", flush=True)
-        file_b = BASE_DIR / f"{base_stem}.js"
-
-        # ── Positive pairs: true clones ──────────────────────────
+    for base_stem in base_stems:
+        # Positive pairs: real clones
         for ctype in CLONE_TYPES:
             clone_stem = f"{base_stem}_clon_{ctype}"
             file_c = clones_dir / f"{clone_stem}.js"
@@ -235,7 +260,7 @@ def build_dataset(base_stems: list, clones_dir: Path, workers: int) -> tuple:
     print(f"  Skipped failed comparisons   : {skipped_failed}")
     print(f"  Dataset build time           : {elapsed:.2f}s")
 
-    return np.array(X), np.array(y), pair_meta
+    return np.array(X, dtype=float), np.array(y, dtype=int), pair_meta
 
 
 # ─────────────────────────────────────────────
@@ -261,11 +286,11 @@ def save_cache(X, y, pair_meta, X_unseen, y_unseen, meta_unseen):
                 "config": {
                     "clone_types": CLONE_TYPES,
                     "compare_mode": COMPARE_MODE,
-                    "plagiarism_threshold": PLAGIARISM_THRESHOLD,
                     "train_file_ratio": TRAIN_FILE_RATIO,
                     "test_size": TEST_SIZE,
                     "random_state": RANDOM_STATE,
                     "negatives_per_base": NEGATIVES_PER_BASE,
+                    "class_names": CLASS_NAMES,
                 },
             },
             f,
@@ -302,13 +327,25 @@ def load_cache():
 #  Output Helpers
 # ─────────────────────────────────────────────
 
-def _verdict_line(base, clone, ctype, feats, pred, truth=None):
-    j = feats[0]
-    d = feats[1]
-    cos = feats[5]
-    lev = feats[2]
+def label_name(label):
+    names = {
+        0: "Clean",
+        1: "Type 1",
+        2: "Type 2",
+        3: "Type 3",
+        4: "Type 4",
+    }
 
-    verdict = "PLAGIARIZED" if pred == 1 else "clean"
+    return names.get(int(label), f"Unknown ({label})")
+
+
+def _verdict_line(base, clone, ctype, feats, pred, truth=None):
+    j = feats[0]      # Jaccard
+    d = feats[1]      # Dice
+    lev = feats[3]    # LevenshteinRatio
+    cos = feats[4]    # Cosine
+
+    verdict = label_name(pred)
     clone_tag = f"[Type {ctype}]" if ctype > 0 else "[neg]"
 
     row = (
@@ -318,8 +355,8 @@ def _verdict_line(base, clone, ctype, feats, pred, truth=None):
     )
 
     if truth is not None:
-        true_l = "PLAGIARIZED" if truth == 1 else "clean"
-        flag = "OK" if pred == truth else "WRONG"
+        true_l = label_name(truth)
+        flag = "OK" if int(pred) == int(truth) else "WRONG"
         row += f"  truth:{true_l:<12} {flag}"
 
     return row
@@ -346,6 +383,17 @@ def _print_all_pairs(X, y, pair_meta):
         print(_verdict_line(base, clone, ctype, X[i], int(y[i]), truth=int(y[i])))
 
 
+def print_confusion_matrix(cm):
+    print("  Confusion Matrix:")
+    print("                Pred 0  Pred 1  Pred 2  Pred 3  Pred 4")
+
+    for i, row in enumerate(cm):
+        print(
+            f"  True {i:<2}      "
+            f"{row[0]:>6}  {row[1]:>6}  {row[2]:>6}  {row[3]:>6}  {row[4]:>6}"
+        )
+
+
 # ─────────────────────────────────────────────
 #  Training & Evaluation
 # ─────────────────────────────────────────────
@@ -365,30 +413,38 @@ def train_and_evaluate(
     print(f"  TRAINING POOL SUMMARY  ({int(TRAIN_FILE_RATIO * 100)}% of base files)")
     print("=" * 65)
     print(f"  Total pairs      : {len(y)}")
-    print(f"  Plagiarized (1)  : {int(y.sum())}")
     print(f"  Clean (0)        : {int((y == 0).sum())}")
+    print(f"  Type 1 (1)       : {int((y == 1).sum())}")
+    print(f"  Type 2 (2)       : {int((y == 2).sum())}")
+    print(f"  Type 3 (3)       : {int((y == 3).sum())}")
+    print(f"  Type 4 (4)       : {int((y == 4).sum())}")
     print(f"  Features ({n_feats})    : {METRIC_NAMES}")
-    print(f"  Threshold        : {PLAGIARISM_THRESHOLD}  (on Jaccard index 0)")
+    print(f"  Compare mode     : {COMPARE_MODE}")
 
     print("\n  Pairs by clone type:")
 
     for ctype in CLONE_TYPES:
         idx = [i for i, (_, _, t) in enumerate(pair_meta) if t == ctype]
-        plag = int(y[idx].sum()) if idx else 0
-        print(f"    Type {ctype}: {len(idx)} pairs  ({plag} labeled plagiarized)")
+        print(f"    Type {ctype}: {len(idx)} pairs")
+
+    class_counts = Counter(y)
+
+    print("\n  Class distribution:")
+    for label in CLASS_LABELS:
+        print(f"    {label_name(label):<8}: {class_counts.get(label, 0)}")
 
     if len(set(y)) < 2:
-        print("\n[WARNING] Only one class in labels — adjust --threshold.")
+        print("\n[WARNING] Only one class in labels.")
 
         if show_tables:
             _print_all_pairs(X, y, pair_meta)
 
         return
 
-    if min(Counter(y).values()) < 2:
+    if min(class_counts.values()) < 2:
         print(
             "\n[WARNING] Not enough samples per class to split — need at least "
-            "2 per class. Increase --train-ratio or lower --threshold."
+            "2 per class. Increase --train-ratio."
         )
 
         if show_tables:
@@ -396,13 +452,20 @@ def train_and_evaluate(
 
         return
 
-    n_test = max(1, round(len(y) * TEST_SIZE))
-    if n_test < len(set(y)):
-        print(f"\n[WARNING] Test set too small ({n_test} sample(s)) for {len(set(y))} classes — increase --train-ratio.")
-        _print_all_pairs(X, y, pair_meta)
+    missing_classes = [label for label in CLASS_LABELS if label not in class_counts]
+
+    if missing_classes:
+        print(
+            "\n[WARNING] Missing classes in training pool: "
+            f"{missing_classes}. Increase --train-ratio."
+        )
+
+        if show_tables:
+            _print_all_pairs(X, y, pair_meta)
+
         return
 
-    # ── Split ──────────────────────────────────────────────────
+    # Split
     indices = list(range(len(y)))
 
     X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
@@ -414,25 +477,33 @@ def train_and_evaluate(
         stratify=y,
     )
 
-    # XGBoost
+    print("\n  Split class distribution:")
+    print("    Clases en y_train:", sorted(set(y_train)))
+    print("    Clases en y_test :", sorted(set(y_test)))
+
+    # XGBoost multiclass
     clf = XGBClassifier(
+        objective="multi:softmax",
+        num_class=5,
+
         n_estimators=300,
         learning_rate=0.05,
         max_depth=4,
         subsample=0.8,
         colsample_bytree=0.8,
         reg_lambda=1.0,
-        eval_metric="logloss",
+
+        eval_metric="mlogloss",
+
         random_state=RANDOM_STATE,
         verbosity=0,
 
-        # Performance options
         n_jobs=-1,
         tree_method="hist",
     )
 
     print("\n" + "=" * 65)
-    print("  TRAINING  (XGBoost — 16 features)")
+    print(f"  TRAINING  (XGBoost multiclass — {len(METRIC_NAMES)} features)")
     print("=" * 65)
 
     t0 = time.perf_counter()
@@ -447,6 +518,23 @@ def train_and_evaluate(
     train_time = time.perf_counter() - t0
     print(f"  Training completed in {train_time:.2f}s.")
 
+    SCRIPT_DIR = Path(__file__).resolve().parent
+    model_dir = SCRIPT_DIR / "Models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    joblib.dump(
+        {
+            "model": clf,
+            "metric_names": METRIC_NAMES,
+            "class_names": CLASS_NAMES,
+            "compare_mode": COMPARE_MODE,
+        },
+        model_dir / "xgboost_model.joblib",
+    )
+
+    print(f"  Modelo guardado en: {model_dir / 'xgboost_model.joblib'}")
+    print(f"  Clases del modelo: {clf.classes_}")
+
     # Internal evaluation
     y_pred = clf.predict(X_test)
 
@@ -454,15 +542,19 @@ def train_and_evaluate(
     print("  EVALUATION  (internal test set)")
     print("=" * 65)
     print(f"  Accuracy : {accuracy_score(y_test, y_pred):.4f}\n")
-    print(classification_report(y_test, y_pred,
-                                 target_names=["Clean (0)", "Plagiarized (1)"],
-                                 labels=[0, 1], zero_division=0))
 
-    cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
-    print("  Confusion Matrix:")
-    print("               Pred Clean  Pred Plagiarized")
-    print(f"  True Clean         {cm[0, 0]:>5}            {cm[0, 1]:>5}")
-    print(f"  True Plagiarized   {cm[1, 0]:>5}            {cm[1, 1]:>5}")
+    print(
+        classification_report(
+            y_test,
+            y_pred,
+            labels=CLASS_LABELS,
+            target_names=CLASS_NAMES,
+            zero_division=0,
+        )
+    )
+
+    cm = confusion_matrix(y_test, y_pred, labels=CLASS_LABELS)
+    print_confusion_matrix(cm)
 
     print("\n  Accuracy by clone type (test pairs):")
 
@@ -475,6 +567,12 @@ def train_and_evaluate(
 
         acc = accuracy_score(y_test[ct_idx], y_pred[ct_idx])
         print(f"    Type {ctype}: {len(ct_idx)} pairs  accuracy={acc:.4f}")
+
+    neg_idx = [i for i, idx in enumerate(idx_test) if pair_meta[idx][2] == 0]
+
+    if neg_idx:
+        acc = accuracy_score(y_test[neg_idx], y_pred[neg_idx])
+        print(f"    Clean/negative: {len(neg_idx)} pairs  accuracy={acc:.4f}")
 
     if show_tables:
         print("\n" + "=" * 65)
@@ -493,10 +591,10 @@ def train_and_evaluate(
 
         all_pred = clf.predict(X)
 
-        _print_header(with_truth=False)
+        _print_header(with_truth=True)
 
         for i, (base, clone, ctype) in enumerate(pair_meta):
-            print(_verdict_line(base, clone, ctype, X[i], all_pred[i]))
+            print(_verdict_line(base, clone, ctype, X[i], all_pred[i], truth=y[i]))
 
     # Unseen evaluation
     if len(X_unseen) > 0:
@@ -506,15 +604,26 @@ def train_and_evaluate(
 
         unseen_pred = clf.predict(X_unseen)
 
-        if len(set(y_unseen)) >= 2:
-            print(f"  Accuracy on unseen : {accuracy_score(y_unseen, unseen_pred):.4f}\n")
-            print(classification_report(y_unseen, unseen_pred,
-                                         target_names=["Clean (0)", "Plagiarized (1)"],
-                                         labels=[0, 1], zero_division=0))
-        else:
-            print("  Only one class in unseen labels — skipping metrics.\n")
+        print(f"  Accuracy on unseen : {accuracy_score(y_unseen, unseen_pred):.4f}\n")
+
+        print(
+            classification_report(
+                y_unseen,
+                unseen_pred,
+                labels=CLASS_LABELS,
+                target_names=CLASS_NAMES,
+                zero_division=0,
+            )
+        )
+
+        cm_unseen = confusion_matrix(y_unseen, unseen_pred, labels=CLASS_LABELS)
+        print_confusion_matrix(cm_unseen)
 
         if show_tables:
+            print("\n" + "=" * 65)
+            print("  PER-PAIR RESULTS  (unseen set)")
+            print("=" * 65)
+
             _print_header(with_truth=True)
 
             for i, (base, clone, ctype) in enumerate(meta_unseen):
@@ -534,30 +643,12 @@ def train_and_evaluate(
 #  Entry Point
 # ─────────────────────────────────────────────
 
-class _Tee:
-    def __init__(self, *streams):
-        self._streams = streams
-    def write(self, data):
-        for s in self._streams:
-            s.write(data)
-    def flush(self):
-        for s in self._streams:
-            s.flush()
-
 def main():
-    global PLAGIARISM_THRESHOLD
     global TRAIN_FILE_RATIO
     global NEGATIVES_PER_BASE
 
     parser = argparse.ArgumentParser(
-        description="Optimized plagiarism detector — 16 JS metrics + XGBoost."
-    )
-
-    parser.add_argument(
-        "--threshold",
-        type=float,
-        default=PLAGIARISM_THRESHOLD,
-        help=f"Jaccard threshold to label a pair plagiarized. Default: {PLAGIARISM_THRESHOLD}",
+        description="Multiclass plagiarism detector — JS metrics + XGBoost."
     )
 
     parser.add_argument(
@@ -607,7 +698,6 @@ def main():
 
     args = parser.parse_args()
 
-    PLAGIARISM_THRESHOLD = args.threshold
     TRAIN_FILE_RATIO = args.train_ratio
     NEGATIVES_PER_BASE = args.negatives_per_base
 
@@ -619,20 +709,6 @@ def main():
         print("\n[ERROR] --train-ratio must be between 0 and 1.")
         return
 
-    log_dir = Path("LLMs/logs")
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / "XGBoost.log"
-    _log_file = open(log_path, "w", encoding="utf-8")
-    _orig_stdout = sys.stdout
-    sys.stdout = _Tee(_orig_stdout, _log_file)
-    try:
-        _main_body()
-    finally:
-        sys.stdout = _orig_stdout
-        _log_file.close()
-    _orig_stdout.write(f"\n[LOG] {log_path}\n")
-
-def _main_body():
     if not COMPARE_JS.exists():
         print(f"\n[ERROR] compare.js not found: {COMPARE_JS}")
         return
@@ -691,7 +767,7 @@ def _main_body():
     X, y, pair_meta = build_dataset(train_stems, CLONES_DIR, workers=args.workers)
 
     if len(X) == 0:
-        print("\n[ERROR] No pairs built. Check clone filenames: <base>_clon_<1|2|3>.js")
+        print("\n[ERROR] No pairs built. Check clone filenames: <base>_clon_<1|2|3|4>.js")
         return
 
     print("\n" + "=" * 65)
