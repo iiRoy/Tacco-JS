@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { tokenizeFile } from "../Tokenizer/Tokenizer-Tokenizr.js";
+import { tokenizeFile } from "../Tokenizer/Tokenizer-Parser.js";
 
 /*
   ============================================================
